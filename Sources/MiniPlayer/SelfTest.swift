@@ -33,7 +33,7 @@ enum SelfTest {
             return "signed in (id \(me.id.prefix(4))…)"
         }
         await step("Likes") {
-            let page = try await api.get("/me/tracks", query: ["limit": "3", "market": "from_token"], as: Paging<SavedTrack>.self)
+            let page = try await api.get("/me/tracks", query: ["limit": "3"], as: Paging<SavedTrack>.self)
             firstLike = page.items.first?.track
             return "\(page.total ?? page.items.count) songs, e.g. \"\(firstLike?.name ?? "-")\""
         }
@@ -54,7 +54,7 @@ enum SelfTest {
             }
         }
         await step("Search (\"Daft Punk\")") {
-            let result = try await api.get("/search", query: ["q": "Daft Punk", "type": "track", "limit": "3"], as: SearchResult.self)
+            let result = try await api.get("/search", query: LibraryModel.searchQuery("Daft Punk"), as: SearchResult.self)
             return (result.tracks?.items ?? []).map(\.name).joined(separator: ", ")
         }
         await step("Devices") {

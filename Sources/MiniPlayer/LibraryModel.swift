@@ -67,7 +67,7 @@ final class LibraryModel {
         defer { likesLoading = false }
         do {
             let page = firstPage
-                ? try await api.get("/me/tracks", query: ["limit": "50", "market": "from_token"], as: Paging<SavedTrack>.self)
+                ? try await api.get("/me/tracks", query: ["limit": "50"], as: Paging<SavedTrack>.self)
                 : try await api.get(likesNext!, as: Paging<SavedTrack>.self)
             let tracks = page.items.map(\.track)
             likes = firstPage ? tracks : likes + tracks
@@ -208,7 +208,7 @@ final class LibraryModel {
     }
 
     private func firstPlaylistPage(_ id: String) async throws -> Paging<PlaylistItem> {
-        let query = ["limit": "50", "market": "from_token", "additional_types": "episode"]
+        let query = ["limit": "50", "additional_types": "episode"]
         do {
             return try await api.get("/playlists/\(id)/items", query: query, as: Paging<PlaylistItem>.self)
         } catch let error as SpotifyError where error.status == 404 || error.status == 403 {
@@ -260,7 +260,7 @@ final class LibraryModel {
         defer { searching = false }
         do {
             let result = try await api.get("/search",
-                                           query: ["q": term, "type": "track", "limit": "10", "market": "from_token"],
+                                           query: Self.searchQuery(term),
                                            as: SearchResult.self)
             guard !Task.isCancelled, term == query.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
             results = result.tracks?.items ?? []
@@ -269,6 +269,13 @@ final class LibraryModel {
         } catch {
             if !Task.isCancelled { searchError = describe(error) }
         }
+    }
+
+    /// Spotify allows at most 10 results per page since 2026. No `market` parameter:
+    /// `market=from_token` would require the `user-read-private` scope for search, and with a
+    /// user token Spotify applies the account's country anyway.
+    static func searchQuery(_ term: String) -> [String: String] {
+        ["q": term, "type": "track", "limit": "10"]
     }
 
     func loadMoreResults() async {
