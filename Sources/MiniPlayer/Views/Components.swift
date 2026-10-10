@@ -53,6 +53,7 @@ struct PlayCircle: View {
 }
 
 struct ScrubBar: View {
+    @Environment(\.accent) private var accent
     var value: Double
     var height: CGFloat = 4
     var enabled = true
@@ -72,7 +73,7 @@ struct ScrubBar: View {
                     .fill(Color.white.opacity(0.18))
                     .frame(height: height)
                 Capsule()
-                    .fill(active ? Color.spotifyGreen : Color.white.opacity(0.85))
+                    .fill(active ? accent : Color.white.opacity(0.85))
                     .frame(width: width * fraction, height: height)
                 Circle()
                     .fill(Color.white)
@@ -148,6 +149,7 @@ struct RemoteImage: View {
 }
 
 struct TrackRow: View {
+    @Environment(\.accent) private var accent
     let track: Track
     let isCurrent: Bool
     var inLikes = false
@@ -172,7 +174,7 @@ struct TrackRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(track.name)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(isCurrent ? Color.spotifyGreen : Color.primary)
+                        .foregroundStyle(isCurrent ? accent : Color.primary)
                         .lineLimit(1)
                     Text(track.subtitle)
                         .font(.system(size: 11))
@@ -183,7 +185,7 @@ struct TrackRow: View {
                 if isCurrent && player.isPlaying {
                     Image(systemName: "waveform")
                         .font(.system(size: 10))
-                        .foregroundStyle(Color.spotifyGreen)
+                        .foregroundStyle(accent)
                 }
                 Text(formatTime(track.duration))
                     .font(.system(size: 10).monospacedDigit())
@@ -315,6 +317,7 @@ struct ErrorState: View {
 }
 
 struct EngineCard: View {
+    @Environment(\.accent) private var accent
     @Environment(PlaybackEngine.self) private var engine
 
     var body: some View {
@@ -348,7 +351,7 @@ struct EngineCard: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 15))
-                .foregroundStyle(Color.spotifyGreen)
+                .foregroundStyle(accent)
                 .frame(width: 22)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.system(size: 12, weight: .semibold))
@@ -365,7 +368,7 @@ struct EngineCard: View {
                         .foregroundStyle(.black)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(Capsule().fill(Color.spotifyGreen))
+                        .background(Capsule().fill(accent))
                 }
                 .buttonStyle(PressStyle())
             }

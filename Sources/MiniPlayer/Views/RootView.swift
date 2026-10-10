@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 struct RootView: View {
-    static let size = NSSize(width: 340, height: 580)
+    static let size = NSSize(width: 340, height: 760)
 
     @Environment(AppStore.self) private var store
     @Environment(SpotifyAuth.self) private var auth

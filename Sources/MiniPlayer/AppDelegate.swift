@@ -29,6 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             .environment(store.player)
             .environment(store.library)
             .environment(store.engine)
+            .environment(store.artwork)
+            .environment(store.lyrics)
         popover.contentViewController = NSHostingController(rootView: root)
         popover.contentSize = RootView.size
         popover.behavior = .transient

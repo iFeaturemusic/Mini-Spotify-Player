@@ -16,6 +16,8 @@ enum LibraryTab: String, CaseIterable {
 
 struct MainView: View {
     @Environment(PlayerModel.self) private var player
+    @Environment(ArtworkModel.self) private var artwork
+    @Environment(LyricsModel.self) private var lyrics
     @AppStorage("tab") private var tab: LibraryTab = .likes
 
     var body: some View {
@@ -29,21 +31,30 @@ struct MainView: View {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 8)
 
-            TabBar(selection: $tab)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+            if lyrics.isShown {
+                LyricsView()
+                    .transition(.opacity)
+            } else {
+                TabBar(selection: $tab)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
 
-            Divider().opacity(0.5)
+                Divider().opacity(0.5)
 
-            Group {
-                switch tab {
-                case .likes: LikesView()
-                case .playlists: PlaylistsView()
-                case .search: SearchView()
+                Group {
+                    switch tab {
+                    case .likes: LikesView()
+                    case .playlists: PlaylistsView()
+                    case .search: SearchView()
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .animation(.easeInOut(duration: 0.25), value: lyrics.isShown)
+        .background { AmbientBackground() }
+        .environment(\.accent, artwork.accent)
+        .tint(artwork.accent)
         .overlay(alignment: .bottom) {
             if let message = player.message {
                 Banner(text: message)
@@ -52,6 +63,26 @@ struct MainView: View {
             }
         }
         .animation(.easeOut(duration: 0.2), value: player.message)
+    }
+}
+
+/// "Ambient light": a heavily blurred, saturated copy of the cover behind the whole player.
+private struct AmbientBackground: View {
+    @Environment(ArtworkModel.self) private var artwork
+
+    var body: some View {
+        ZStack {
+            if let backdrop = artwork.backdrop {
+                Image(nsImage: backdrop)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fill)
+                    .transition(.opacity)
+                    .id(artwork.key)
+            }
+            LinearGradient(colors: [.black.opacity(0.15), .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+        }
+        .clipped()
     }
 }
 
@@ -68,7 +99,7 @@ private struct TabBar: View {
                         .padding(.horizontal, 11)
                         .padding(.vertical, 5)
                         .foregroundStyle(selected ? Color.black : Color.primary)
-                        .background(Capsule().fill(selected ? Color.white : Color.white.opacity(0.08)))
+                        .background(Capsule().fill(selected ? Color.white : Color.white.opacity(0.12)))
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -103,6 +134,7 @@ private struct SectionHeader<Trailing: View>: View {
 
 private struct LikesView: View {
     @Environment(LibraryModel.self) private var library
+    @Environment(\.accent) private var accent
     @Environment(PlayerModel.self) private var player
 
     var body: some View {
@@ -114,7 +146,7 @@ private struct LikesView: View {
                 IconButton(systemName: "shuffle", size: 12, tint: .secondary, help: "Zufällig abspielen") {
                     library.playAllLikes(shuffled: true)
                 }
-                PlayCircle(playing: false, size: 28, color: .spotifyGreen) {
+                PlayCircle(playing: false, size: 28, color: accent) {
                     library.playAllLikes(shuffled: false)
                 }
                 .disabled(library.likes.isEmpty)
@@ -207,6 +239,7 @@ private struct PlaylistRow: View {
 private struct PlaylistDetailView: View {
     let playlist: Playlist
     @Environment(LibraryModel.self) private var library
+    @Environment(\.accent) private var accent
     @Environment(PlayerModel.self) private var player
 
     var body: some View {
@@ -224,7 +257,7 @@ private struct PlaylistDetailView: View {
                 IconButton(systemName: "shuffle", size: 12, tint: .secondary, help: "Zufällig abspielen") {
                     library.playPlaylist(playlist, shuffled: true)
                 }
-                PlayCircle(playing: isThisPlaying, size: 30, color: .spotifyGreen) {
+                PlayCircle(playing: isThisPlaying, size: 30, color: accent) {
                     if isThisPlaying {
                         player.togglePlay()
                     } else {

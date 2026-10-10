@@ -18,6 +18,8 @@ Browse your likes and playlists, search for new music and play it, without the S
 ## Features
 
 - **Lives in the menu bar.** No Dock icon and no window. Click the icon and the player folds out.
+- **Cover in focus.** The artwork fills the player, and the whole interface takes on its colors like ambient light.
+- **Sing along.** Time-synced lyrics that scroll with the music; tap a line to jump there.
 - **Your library.** Liked songs, playlists and search, with infinite scrolling.
 - **Plays by itself.** A bundled [librespot](https://github.com/librespot-org/librespot) engine runs invisibly as the Spotify Connect device "MiniPlayer". No Spotify app needed.
 - **Live visualizer in the icon.** Four bars (bass → treble) dance to whatever is playing.
@@ -27,7 +29,7 @@ Browse your likes and playlists, search for new music and play it, without the S
 <div align="center">
 <img src="docs/images/visualizer.gif" alt="Menu bar visualizer" width="411">
 <br><br>
-<img src="docs/images/screens.jpg" alt="Playlists, playlist detail and search" width="900">
+<img src="docs/images/screens.jpg" alt="Lyrics, playlist and search, each tinted by its cover" width="900">
 </div>
 
 > The app's interface is in German.
@@ -112,10 +114,12 @@ flowchart LR
 - **Login:** Authorization Code flow with PKCE, so no client secret is involved. A tiny local server on `127.0.0.1:8898` runs only during login to receive the redirect.
 - **Playback:** librespot outputs raw float PCM (`--backend pipe`). MiniPlayer plays it through `AVAudioEngine` and measures four frequency bands in the real-time render callback. The audio engine stops 3 seconds after playback pauses.
 - **Polling:** state is only polled while the player is open. The progress bar is interpolated locally.
+- **Ambient colors:** on every track change the cover is blurred and saturated with Core Image for the background, and the most vivid hue becomes the accent color. This runs once per track.
+- **Lyrics:** fetched from [LRCLIB](https://lrclib.net) only while the lyrics view is open, cached per track and highlighted line by line (with a small offset for MiniPlayer's own audio buffer).
 
 ## Privacy
 
-- MiniPlayer talks only to Spotify. There is no telemetry and no third-party server.
+- MiniPlayer talks to Spotify and, only while the lyrics view is open, to [LRCLIB](https://lrclib.net), which receives the title, artist and duration of the current song. There is no telemetry.
 - The refresh token is stored in the macOS **Keychain**. Access tokens are kept in memory only.
 - librespot's credentials live in `~/Library/Application Support/MiniPlayer/librespot` (folder permissions `0700`).
 - Logs in `~/Library/Logs/MiniPlayer/` contain errors and status events only, never tokens or search terms.
@@ -128,9 +132,10 @@ flowchart LR
 | Every request fails with `403 forbidden` | The account that owns the developer app needs Spotify Premium. Other accounts must be added under *User Management* in the dashboard. |
 | "INVALID_CLIENT: Invalid redirect URI" | The redirect URI must be exactly `http://127.0.0.1:8898/callback`. |
 | Port 8898 is busy | Another app is using the port. Quit it and try again. |
+| "No lyrics found" | LRCLIB is community-run, so niche tracks and remixes are often missing. You can add lyrics on [lrclib.net](https://lrclib.net). |
 | Songs of a playlist aren't listed | Spotify only lists items of playlists you own or collaborate on (2026 API change). Playing the whole playlist still works. |
 
-Run the built-in self-test to check login, library, search and devices:
+Run the built-in self-test to check login, library, lyrics, search and devices:
 
 ```bash
 /Applications/MiniPlayer.app/Contents/MacOS/MiniPlayer --selftest
@@ -151,6 +156,8 @@ Sources/
     LoopbackServer.swift local redirect receiver used during login
     SpotifyAPI.swift     Web API client (401 refresh, 429 retry)
     PlayerModel.swift    playback state and commands
+    Artwork.swift        cover, ambient backdrop and accent color
+    Lyrics.swift         LRCLIB lookup and LRC parsing
     LibraryModel.swift   likes, playlists, search
     PlaybackEngine.swift starts and supervises librespot
     AudioOutput.swift    PCM → CoreAudio, visualizer levels
@@ -168,6 +175,7 @@ The README images are rendered from the real SwiftUI views with fictional demo d
 ## Credits
 
 - [librespot](https://github.com/librespot-org/librespot), the open-source Spotify Connect client (MIT)
+- [LRCLIB](https://lrclib.net), the free, community-run synced lyrics database
 
 ## Disclaimer
 

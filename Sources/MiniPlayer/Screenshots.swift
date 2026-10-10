@@ -19,15 +19,27 @@ enum Screenshots {
         store.library.setDemo(likes: Demo.tracks, likesTotal: 1_284, playlists: Demo.playlists,
                               results: Demo.searchResults, query: "night")
 
+        func nowPlaying(_ index: Int) {
+            store.player.setDemoState(track: Demo.tracks[index], progressMs: 84_000, liked: index == 0)
+            if let cover = ImageLoader.shared.cached(Demo.coverURL(index)) { store.artwork.setDemo(cover) }
+        }
+
+        nowPlaying(0)
         let likes = popover(store, tab: .likes)
-        let playlists = popover(store, tab: .playlists)
+        store.lyrics.setDemo(Demo.lyrics)
+        let lyrics = popover(store, tab: .likes)
+        store.lyrics.hide()
+
+        nowPlaying(2)
         store.library.setDemoOpenPlaylist(Demo.playlists[0], tracks: Array(Demo.tracks.reversed()))
         let playlistDetail = popover(store, tab: .playlists)
         store.library.setDemoOpenPlaylist(nil, tracks: [])
+
+        nowPlaying(6)
         let search = popover(store, tab: .search)
 
         save(HeroImage(popover: likes), to: folder.appendingPathComponent("hero.jpg"))
-        save(ScreensImage(popovers: [playlists, playlistDetail, search]), to: folder.appendingPathComponent("screens.jpg"))
+        save(ScreensImage(popovers: [lyrics, playlistDetail, search]), to: folder.appendingPathComponent("screens.jpg"))
         saveVisualizerGIF(to: folder.appendingPathComponent("visualizer.gif"))
     }
 
@@ -39,11 +51,12 @@ enum Screenshots {
             .environment(store.player)
             .environment(store.library)
             .environment(store.engine)
+            .environment(store.artwork)
+            .environment(store.lyrics)
             .environment(\.screenshotMode, true)
             .frame(width: RootView.size.width, height: RootView.size.height)
             .background(Color.popover)
             .environment(\.colorScheme, .dark)
-            .tint(.spotifyGreen)
         return image(view, scale: 2)
     }
 
@@ -201,7 +214,7 @@ private struct HeroImage: View {
                 HStack(alignment: .top) {
                     Tagline()
                         .padding(.leading, 90)
-                        .padding(.top, 150)
+                        .padding(.top, 230)
                     Spacer()
                     PopoverCard(image: popover)
                         .padding(.trailing, 135)
@@ -210,7 +223,7 @@ private struct HeroImage: View {
                 Spacer()
             }
         }
-        .frame(width: 1200, height: 690)
+        .frame(width: 1200, height: 880)
     }
 }
 
@@ -232,6 +245,8 @@ private struct Tagline: View {
             VStack(alignment: .leading, spacing: 10) {
                 Label("Likes, playlists and search", systemImage: "music.note.list")
                 Label("Plays by itself, no Spotify app needed", systemImage: "hifispeaker.fill")
+                Label("Colors adapt to the cover", systemImage: "paintpalette.fill")
+                Label("Synced lyrics to sing along", systemImage: "quote.bubble.fill")
                 Label("Live visualizer right in the icon", systemImage: "waveform")
                 Label("Native Swift, ~0 % CPU when idle", systemImage: "leaf.fill")
             }
@@ -253,7 +268,7 @@ private struct ScreensImage: View {
                 ForEach(popovers.indices, id: \.self) { PopoverCard(image: popovers[$0], arrow: false) }
             }
         }
-        .frame(width: 1240, height: 700)
+        .frame(width: 1240, height: 880)
     }
 }
 
@@ -311,6 +326,13 @@ private enum Demo {
         track(8, "Northern Echo", "Aster Vale", 216),
         track(9, "Slow Motion City", "Nova Reyes", 229),
     ]
+
+    // Original placeholder lines for the screenshots
+    static let lyrics: [LyricLine] = [
+        "City lights are fading slow", "Every window's got a glow", "We keep running on the midnight line",
+        "Chasing echoes, losing time", "Neon skyline, hold me tight", "Paint the dark in electric light",
+        "Neon skyline, don't let go", "Take me where the night winds blow", "", "Static on the radio",
+    ].enumerated().map { LyricLine(id: $0.offset, time: 70_000 + $0.offset * 3_600, text: $0.element) }
 
     static let searchResults: [Track] = [
         track(10, "Night Swim", "Coral Ivy", 203),

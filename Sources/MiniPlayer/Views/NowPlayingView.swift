@@ -2,51 +2,45 @@ import SwiftUI
 
 struct NowPlayingView: View {
     @Environment(PlayerModel.self) private var player
+    @Environment(ArtworkModel.self) private var artwork
+    @Environment(LyricsModel.self) private var lyrics
+    @Environment(\.accent) private var accent
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                RemoteImage(url: player.track?.coverURL(300), size: 58, radius: 6)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(player.track?.name ?? "Gerade läuft nichts")
-                        .font(.system(size: 13, weight: .semibold))
-                        .lineLimit(1)
-                    Text(player.track?.subtitle ?? "Wähle unten einen Song aus")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+        VStack(spacing: 10) {
+            ZStack(alignment: .bottom) {
+                cover
+                LinearGradient(colors: [.clear, .black.opacity(0.8)], startPoint: .center, endPoint: .bottom)
+                VStack(spacing: 4) {
+                    ProgressRow()
+                    controls
                 }
-                Spacer(minLength: 4)
-                if player.track != nil {
-                    IconButton(systemName: player.isLiked ? "heart.fill" : "heart",
-                               size: 15,
-                               tint: player.isLiked ? .spotifyGreen : .secondary,
-                               help: player.isLiked ? "Aus Lieblingssongs entfernen" : "Zu Lieblingssongs hinzufügen") {
-                        player.toggleLike()
+                .padding(.horizontal, 14)
+                .padding(.bottom, 8)
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .overlay(alignment: .top) {
+                HStack(alignment: .top, spacing: 6) {
+                    TrackPill()
+                    Spacer(minLength: 4)
+                    if player.track != nil {
+                        CircleButton(systemName: player.isLiked ? "heart.fill" : "heart",
+                                     tint: player.isLiked ? accent : .white,
+                                     help: player.isLiked ? "Aus Lieblingssongs entfernen" : "Zu Lieblingssongs hinzufügen") {
+                            player.toggleLike()
+                        }
+                    }
+                    CircleButton(systemName: "quote.bubble.fill",
+                                 tint: lyrics.isShown ? .black : .white,
+                                 fill: lyrics.isShown ? accent : nil,
+                                 help: "Lyrics") {
+                        lyrics.toggle()
                     }
                 }
+                .padding(10)
             }
-
-            ProgressRow()
-
-            HStack(spacing: 0) {
-                IconButton(systemName: "shuffle", size: 13,
-                           tint: player.shuffle ? .spotifyGreen : .secondary, help: "Zufallswiedergabe") {
-                    player.toggleShuffle()
-                }
-                Spacer()
-                IconButton(systemName: "backward.fill", size: 15, help: "Zurück") { player.previous() }
-                Spacer()
-                PlayCircle(playing: player.isPlaying, size: 36) { player.togglePlay() }
-                Spacer()
-                IconButton(systemName: "forward.fill", size: 15, help: "Weiter") { player.next() }
-                Spacer()
-                IconButton(systemName: player.repeatMode == "track" ? "repeat.1" : "repeat", size: 13,
-                           tint: player.repeatMode == "off" ? .secondary : .spotifyGreen, help: "Wiederholen") {
-                    player.cycleRepeat()
-                }
-            }
-            .padding(.horizontal, 14)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
 
             HStack(spacing: 8) {
                 DeviceMenu()
@@ -54,6 +48,96 @@ struct NowPlayingView: View {
                 VolumeControl()
             }
         }
+    }
+
+    @ViewBuilder
+    private var cover: some View {
+        if let image = artwork.cover {
+            Image(nsImage: image)
+                .resizable()
+                .interpolation(.high)
+                .aspectRatio(contentMode: .fill)
+                .transition(.opacity)
+                .id(artwork.key)
+        } else {
+            ZStack {
+                LinearGradient(colors: [Color(white: 0.22), Color(white: 0.1)], startPoint: .top, endPoint: .bottom)
+                Image(systemName: "music.note")
+                    .font(.system(size: 64, weight: .light))
+                    .foregroundStyle(.white.opacity(0.25))
+            }
+        }
+    }
+
+    private var controls: some View {
+        HStack(spacing: 0) {
+            IconButton(systemName: "shuffle", size: 13,
+                       tint: player.shuffle ? accent : .white.opacity(0.75), help: "Zufallswiedergabe") {
+                player.toggleShuffle()
+            }
+            Spacer()
+            IconButton(systemName: "backward.fill", size: 16, tint: .white, help: "Zurück") { player.previous() }
+            Spacer()
+            PlayCircle(playing: player.isPlaying, size: 40) { player.togglePlay() }
+            Spacer()
+            IconButton(systemName: "forward.fill", size: 16, tint: .white, help: "Weiter") { player.next() }
+            Spacer()
+            IconButton(systemName: player.repeatMode == "track" ? "repeat.1" : "repeat", size: 13,
+                       tint: player.repeatMode == "off" ? .white.opacity(0.75) : accent, help: "Wiederholen") {
+                player.cycleRepeat()
+            }
+        }
+    }
+}
+
+private struct TrackPill: View {
+    @Environment(PlayerModel.self) private var player
+
+    var body: some View {
+        HStack(spacing: 8) {
+            RemoteImage(url: player.track?.coverURL(60), size: 28, radius: 14)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(player.track?.name ?? "Gerade läuft nichts")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(player.track?.subtitle ?? "Wähle unten einen Song aus")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.75))
+            }
+            .lineLimit(1)
+            .padding(.trailing, 6)
+        }
+        .foregroundStyle(.white)
+        .padding(4)
+        .background(.ultraThinMaterial, in: Capsule())
+        .environment(\.colorScheme, .dark)
+        .frame(maxWidth: 220, alignment: .leading)
+    }
+}
+
+private struct CircleButton: View {
+    let systemName: String
+    var tint: Color = .white
+    var fill: Color?
+    var help: String = ""
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 32, height: 32)
+                .background {
+                    if let fill {
+                        Circle().fill(fill)
+                    } else {
+                        Circle().fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
+                    }
+                }
+                .contentShape(Circle())
+        }
+        .buttonStyle(PressStyle())
+        .help(help)
     }
 }
 
@@ -78,7 +162,7 @@ struct ProgressRow: View {
                 Text(formatTime(duration))
             }
             .font(.system(size: 9, weight: .medium).monospacedDigit())
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.white.opacity(0.75))
         }
     }
 }
@@ -109,6 +193,7 @@ struct VolumeControl: View {
 struct DeviceMenu: View {
     @Environment(PlayerModel.self) private var player
     @Environment(PlaybackEngine.self) private var engine
+    @Environment(\.accent) private var accent
 
     var body: some View {
         Menu {
@@ -141,7 +226,7 @@ struct DeviceMenu: View {
                     .lineLimit(1)
             }
             .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(player.device != nil ? Color.spotifyGreen : Color.secondary)
+            .foregroundStyle(player.device != nil ? accent : Color.secondary)
             .contentShape(Rectangle())
         }
         .menuStyle(.button)

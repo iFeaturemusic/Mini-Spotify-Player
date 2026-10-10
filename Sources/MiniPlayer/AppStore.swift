@@ -8,6 +8,8 @@ final class AppStore {
     let engine: PlaybackEngine
     let player: PlayerModel
     let library: LibraryModel
+    let artwork = ArtworkModel()
+    let lyrics = LyricsModel()
 
     private(set) var popoverOpen = false
     var editingClientID = false
@@ -21,6 +23,13 @@ final class AppStore {
         player = PlayerModel(api: api, engine: engine)
         library = LibraryModel(api: api, player: player)
 
+        player.onTrackChanged = { [weak artwork, weak lyrics] track in
+            artwork?.update(for: track)
+            lyrics?.trackChanged(track)
+        }
+        lyrics.onVisibilityChanged = { [weak player] visible in
+            player?.setFastTicks(visible)
+        }
         player.onLikeChanged = { [weak library] track, saved in
             library?.likeChanged(track, saved: saved)
         }

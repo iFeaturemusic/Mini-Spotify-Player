@@ -19,6 +19,8 @@ final class PlayerModel {
     private(set) var message: String?
 
     @ObservationIgnored var onStatusChanged: (() -> Void)?
+    @ObservationIgnored var onTrackChanged: ((Track?) -> Void)?
+    @ObservationIgnored private var fastTicks = false
     @ObservationIgnored var onLikeChanged: ((Track, Bool) -> Void)?
 
     let api: SpotifyAPI
@@ -41,6 +43,20 @@ final class PlayerModel {
     }
 
     var durationMs: Int { track?.duration ?? 0 }
+
+    /// Position for lyrics: MiniPlayer's own output is buffered ~0.4 s behind what Spotify reports.
+    var lyricsPosition: Int {
+        position(at: now) - (device?.id == PlaybackEngine.deviceID ? 400 : 0)
+    }
+
+    /// Lyrics need a finer clock than the progress bar.
+    func setFastTicks(_ enabled: Bool) {
+        guard enabled != fastTicks else { return }
+        fastTicks = enabled
+        tickTask?.cancel()
+        tickTask = nil
+        updateTicker()
+    }
 
     func position(at date: Date) -> Int {
         guard isPlaying else { return progressMs }
@@ -76,6 +92,7 @@ final class PlayerModel {
         isLiked = false
         contextURI = nil
         likeCheckedURI = nil
+        onTrackChanged?(nil)
         onStatusChanged?()
     }
 
@@ -113,7 +130,10 @@ final class PlayerModel {
             if abs(value - volume) > 0.005 { volume = value }
         }
         if contextURI != state.context?.uri { contextURI = state.context?.uri }
-        if trackChanged { onStatusChanged?() }
+        if trackChanged {
+            onStatusChanged?()
+            onTrackChanged?(track)
+        }
 
         if let track, track.uri != likeCheckedURI {
             likeCheckedURI = track.uri
@@ -139,7 +159,7 @@ final class PlayerModel {
         if shouldRun, tickTask == nil {
             tickTask = Task { [weak self] in
                 while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(1))
+                    try? await Task.sleep(for: .milliseconds(self?.fastTicks == true ? 250 : 1000))
                     guard let self, !Task.isCancelled else { return }
                     self.now = Date()
                     if self.durationMs > 0, self.position(at: self.now) >= self.durationMs,

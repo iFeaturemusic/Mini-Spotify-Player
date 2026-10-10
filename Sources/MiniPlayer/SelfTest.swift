@@ -1,6 +1,6 @@
 import Foundation
 
-/// `MiniPlayer --selftest [--play] [--seconds N]` checks login, library, search and devices.
+/// `MiniPlayer --selftest [--verbose] [--play] [--seconds N]` checks login, library, search and devices.
 /// With `--play` it plays a liked song on "MiniPlayer" at 25 % volume, then pauses.
 @MainActor
 enum SelfTest {
@@ -26,6 +26,7 @@ enum SelfTest {
         }
 
         var firstLike: Track?
+        var someLikes: [Track] = []
         var engineDeviceFound = false
 
         await step("Profile") {
@@ -33,9 +34,29 @@ enum SelfTest {
             return "signed in (id \(me.id.prefix(4))…)"
         }
         await step("Likes") {
-            let page = try await api.get("/me/tracks", query: ["limit": "3"], as: Paging<SavedTrack>.self)
+            let page = try await api.get("/me/tracks", query: ["limit": "5"], as: Paging<SavedTrack>.self)
             firstLike = page.items.first?.track
+            someLikes = page.items.map(\.track)
             return "\(page.total ?? page.items.count) songs, e.g. \"\(firstLike?.name ?? "-")\""
+        }
+        if !someLikes.isEmpty {
+            await step("Lyrics (LRCLIB, \(someLikes.count) liked songs)") {
+                var synced = 0, plain = 0, failed = 0
+                for track in someLikes {
+                    let result = await LyricsModel().fetch(track)
+                    switch result {
+                    case .synced: synced += 1
+                    case .plain: plain += 1
+                    case .failed: failed += 1
+                    default: break
+                    }
+                    if CommandLine.arguments.contains("--verbose") {
+                        print("    \(track.name) – \(track.subtitle): \(String(describing: result).prefix(12))")
+                    }
+                }
+                if failed == someLikes.count { throw URLError(.cannotConnectToHost) }
+                return "\(synced) synced, \(plain) plain text, \(someLikes.count - synced - plain - failed) without lyrics"
+            }
         }
         var ownPlaylist: Playlist?
         await step("Playlists") {
