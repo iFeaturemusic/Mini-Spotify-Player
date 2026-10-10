@@ -8,6 +8,8 @@ struct RootView: View {
     @Environment(SpotifyAuth.self) private var auth
 
     var body: some View {
+        let showsPlayer = !auth.clientID.isEmpty && !store.editingClientID && auth.isLoggedIn
+        let compact = showsPlayer && store.compact
         Group {
             if auth.clientID.isEmpty || store.editingClientID {
                 SetupView()
@@ -17,7 +19,10 @@ struct RootView: View {
                 MainView()
             }
         }
-        .frame(width: Self.size.width, height: Self.size.height)
+        .frame(width: Self.size.width, height: compact ? nil : Self.size.height)
+        .fixedSize(horizontal: false, vertical: compact)
+        .background(store.detached ? Color(white: 0.1) : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: store.detached ? 18 : 0, style: .continuous))
         .tint(.spotifyGreen)
     }
 }

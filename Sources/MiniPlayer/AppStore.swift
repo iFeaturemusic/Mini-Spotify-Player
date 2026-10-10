@@ -11,10 +11,18 @@ final class AppStore {
     let artwork = ArtworkModel()
     let lyrics = LyricsModel()
 
-    private(set) var popoverOpen = false
     var editingClientID = false
+    /// Library hidden, only the cover is shown.
+    private(set) var compact = UserDefaults.standard.bool(forKey: "compact")
+    /// Player lives in its own floating window instead of the menu bar popover.
+    private(set) var detached = UserDefaults.standard.bool(forKey: "detached")
 
-    @ObservationIgnored var showPopover: (() -> Void)?
+    @ObservationIgnored private var popoverOpen = false
+    @ObservationIgnored private var windowVisible = false
+
+    @ObservationIgnored var showPlayer: (() -> Void)?
+    @ObservationIgnored var onLayoutChanged: (() -> Void)?
+    @ObservationIgnored var onDetachedChanged: ((Bool) -> Void)?
 
     init() {
         auth = SpotifyAuth()
@@ -27,8 +35,9 @@ final class AppStore {
             artwork?.update(for: track)
             lyrics?.trackChanged(track)
         }
-        lyrics.onVisibilityChanged = { [weak player] visible in
-            player?.setFastTicks(visible)
+        lyrics.onVisibilityChanged = { [weak self] visible in
+            self?.player.setFastTicks(visible)
+            if visible, self?.compact == true { self?.setCompact(false) }
         }
         player.onLikeChanged = { [weak library] track, saved in
             library?.likeChanged(track, saved: saved)
@@ -38,6 +47,7 @@ final class AppStore {
             self?.player.reset()
             self?.library.reset()
             self?.engine.forgetCredentials()
+            self?.onLayoutChanged?()
         }
     }
 
@@ -53,14 +63,44 @@ final class AppStore {
         engine.stop()
     }
 
+    // MARK: - Layout
+
+    func setCompact(_ value: Bool) {
+        guard value != compact else { return }
+        compact = value
+        UserDefaults.standard.set(value, forKey: "compact")
+        if value { lyrics.hide() }
+        onLayoutChanged?()
+    }
+
+    func setDetached(_ value: Bool) {
+        guard value != detached else { return }
+        detached = value
+        UserDefaults.standard.set(value, forKey: "detached")
+        onDetachedChanged?(value)
+    }
+
+    // MARK: - Visibility
+
     func popoverDidOpen() {
         popoverOpen = true
-        if auth.isLoggedIn { player.setVisible(true) }
+        updateVisibility()
     }
 
     func popoverDidClose() {
         popoverOpen = false
-        player.setVisible(false)
+        updateVisibility()
+    }
+
+    /// The detached window counts as visible only while it is on screen and not fully covered.
+    func setWindowVisible(_ visible: Bool) {
+        guard visible != windowVisible else { return }
+        windowVisible = visible
+        updateVisibility()
+    }
+
+    private func updateVisibility() {
+        player.setVisible(auth.isLoggedIn && (popoverOpen || windowVisible))
     }
 
     func logout() {
@@ -71,10 +111,11 @@ final class AppStore {
         player.reset()
         library.reset()
         if engine.hasCredentials { engine.start() }
-        if popoverOpen {
-            player.setVisible(true)
+        onLayoutChanged?()
+        if popoverOpen || windowVisible {
+            updateVisibility()
         } else {
-            showPopover?()
+            showPlayer?()
         }
     }
 }

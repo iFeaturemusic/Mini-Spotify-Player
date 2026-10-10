@@ -1,22 +1,34 @@
 import SwiftUI
 
 struct NowPlayingView: View {
+    @Environment(AppStore.self) private var store
     @Environment(PlayerModel.self) private var player
     @Environment(ArtworkModel.self) private var artwork
     @Environment(LyricsModel.self) private var lyrics
     @Environment(\.accent) private var accent
+    @State private var hovering = false
 
     var body: some View {
+        // Compact mode shows the bare cover; title and controls appear on hover.
+        let showOverlays = !store.compact || hovering
         VStack(spacing: 10) {
             ZStack(alignment: .bottom) {
                 cover
-                LinearGradient(colors: [.clear, .black.opacity(0.8)], startPoint: .center, endPoint: .bottom)
-                VStack(spacing: 4) {
-                    ProgressRow()
-                    controls
+                    .overlay {
+                        if store.detached { WindowDragArea() }
+                    }
+                Group {
+                    LinearGradient(colors: [.clear, .black.opacity(0.8)], startPoint: .center, endPoint: .bottom)
+                        .allowsHitTesting(false)
+                    VStack(spacing: 4) {
+                        ProgressRow()
+                        controls
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 8)
                 }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 8)
+                .opacity(showOverlays ? 1 : 0)
+                .allowsHitTesting(showOverlays)
             }
             .aspectRatio(1, contentMode: .fit)
             .overlay(alignment: .top) {
@@ -38,14 +50,28 @@ struct NowPlayingView: View {
                     }
                 }
                 .padding(10)
+                .opacity(showOverlays ? 1 : 0)
+                .allowsHitTesting(showOverlays)
             }
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
+            .onHover { hovering = $0 }
+            .animation(.easeInOut(duration: 0.25), value: showOverlays)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 DeviceMenu()
-                Spacer()
+                Spacer(minLength: 4)
                 VolumeControl()
+                IconButton(systemName: store.compact ? "rectangle.expand.vertical" : "rectangle.compress.vertical",
+                           size: 11, tint: .secondary,
+                           help: store.compact ? "Bibliothek einblenden" : "Nur das Cover zeigen") {
+                    store.setCompact(!store.compact)
+                }
+                IconButton(systemName: store.detached ? "menubar.arrow.up.rectangle" : "macwindow.on.rectangle",
+                           size: 11, tint: .secondary,
+                           help: store.detached ? "Zurück in die Menüleiste" : "Als Fenster lösen") {
+                    store.setDetached(!store.detached)
+                }
             }
         }
     }
@@ -185,7 +211,7 @@ struct VolumeControl: View {
                          player.setVolume(value)
                          local = nil
                      })
-            .frame(width: 86)
+            .frame(width: 72)
         }
     }
 }

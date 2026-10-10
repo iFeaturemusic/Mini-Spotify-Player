@@ -7,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private let store = AppStore()
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
+    private var popoverHost: NSViewController!
+    private var playerWindow: PlayerPanel?
 
     private var visualizerTimer: Timer?
     private var visualizerView: VisualizerView?
@@ -23,15 +25,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
         updateStatusIcon()
 
-        let root = RootView()
-            .environment(store)
-            .environment(store.auth)
-            .environment(store.player)
-            .environment(store.library)
-            .environment(store.engine)
-            .environment(store.artwork)
-            .environment(store.lyrics)
-        popover.contentViewController = NSHostingController(rootView: root)
+        installMainMenu()
+
+        popoverHost = NSHostingController(rootView: makeRootView())
+        popover.contentViewController = popoverHost
         popover.contentSize = RootView.size
         popover.behavior = .transient
         popover.animates = true
@@ -40,7 +37,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
         store.player.onStatusChanged = { [weak self] in self?.updateStatusIcon() }
         store.engine.audio.onActivityChanged = { [weak self] active in self?.setVisualizer(active) }
-        store.showPopover = { [weak self] in self?.showPopover() }
+        store.showPlayer = { [weak self] in self?.showPlayer() }
+        store.onLayoutChanged = { [weak self] in
+            DispatchQueue.main.async { self?.fitToContent(animated: true) }
+        }
+        store.onDetachedChanged = { [weak self] detached in
+            if detached { self?.popOut() } else { self?.popIn() }
+        }
 
         DistributedNotificationCenter.default().addObserver(
             self,
@@ -52,9 +55,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
         store.launched()
 
-        if ProcessInfo.processInfo.arguments.contains("--show") {
-            DispatchQueue.main.async { self.showPopover() }
+        if store.detached || ProcessInfo.processInfo.arguments.contains("--show") {
+            DispatchQueue.main.async { self.showPlayer() }
         }
+    }
+
+    private func makeRootView() -> some View {
+        RootView()
+            .environment(store)
+            .environment(store.auth)
+            .environment(store.player)
+            .environment(store.library)
+            .environment(store.engine)
+            .environment(store.artwork)
+            .environment(store.lyrics)
+    }
+
+    /// Menu bar apps have no main menu, but Cmd+A/C/V/X/Z are dispatched through it.
+    /// This menu is never visible; it only makes those shortcuts work in text fields.
+    private func installMainMenu() {
+        let main = NSMenu()
+
+        let appMenu = NSMenu()
+        appMenu.addItem(NSMenuItem(title: "MiniPlayer beenden", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        let appItem = NSMenuItem()
+        appItem.submenu = appMenu
+        main.addItem(appItem)
+
+        let edit = NSMenu(title: "Bearbeiten")
+        edit.addItem(NSMenuItem(title: "Widerrufen", action: Selector(("undo:")), keyEquivalent: "z"))
+        let redo = NSMenuItem(title: "Wiederholen", action: Selector(("redo:")), keyEquivalent: "z")
+        redo.keyEquivalentModifierMask = [.command, .shift]
+        edit.addItem(redo)
+        edit.addItem(.separator())
+        edit.addItem(NSMenuItem(title: "Ausschneiden", action: #selector(NSText.cut(_:)), keyEquivalent: "x"))
+        edit.addItem(NSMenuItem(title: "Kopieren", action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
+        edit.addItem(NSMenuItem(title: "Einsetzen", action: #selector(NSText.paste(_:)), keyEquivalent: "v"))
+        edit.addItem(NSMenuItem(title: "Alles auswählen", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"))
+        let editItem = NSMenuItem()
+        editItem.submenu = edit
+        main.addItem(editItem)
+
+        let window = NSMenu(title: "Fenster")
+        let close = NSMenuItem(title: "Schließen", action: #selector(closePlayer), keyEquivalent: "w")
+        close.target = self
+        window.addItem(close)
+        let windowItem = NSMenuItem()
+        windowItem.submenu = window
+        main.addItem(windowItem)
+
+        NSApp.mainMenu = main
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -147,6 +197,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         let event = NSApp.currentEvent
         if event?.type == .rightMouseUp || event?.modifierFlags.contains(.control) == true {
             showMenu()
+        } else if store.detached {
+            toggleWindow()
         } else if popover.isShown {
             popover.performClose(nil)
         } else {
@@ -154,11 +206,87 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
     }
 
+    private func showPlayer() {
+        if store.detached { showWindow() } else { showPopover() }
+    }
+
     private func showPopover() {
         guard let button = statusItem.button, !popover.isShown else { return }
         NSApp.activate()
+        fitToContent(animated: false)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
+    }
+
+    private func fitToContent(animated: Bool) {
+        if let view = popoverHost?.view {
+            view.layoutSubtreeIfNeeded()
+            let size = view.fittingSize
+            if size.height > 0, size != popover.contentSize { popover.contentSize = size }
+        }
+        playerWindow?.fitToContent(animated: animated)
+    }
+
+    // MARK: - Detached window
+
+    private func showWindow() {
+        let panel = playerWindow ?? makeWindow()
+        playerWindow = panel
+        NSApp.activate()
+        panel.makeKeyAndOrderFront(nil)
+        panel.fitToContent(animated: false)
+        updateWindowVisibility()
+    }
+
+    private func makeWindow() -> PlayerPanel {
+        let panel = PlayerPanel(contentViewController: NSHostingController(rootView: makeRootView()))
+        if !panel.setFrameUsingName("MiniPlayerWindow"), let anchor = statusItem.button?.window?.frame {
+            panel.setFrameTopLeftPoint(NSPoint(x: anchor.midX - RootView.size.width / 2, y: anchor.minY - 8))
+        }
+        panel.setFrameAutosaveName("MiniPlayerWindow")
+        NotificationCenter.default.addObserver(forName: NSWindow.didChangeOcclusionStateNotification,
+                                               object: panel, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.updateWindowVisibility() }
+        }
+        return panel
+    }
+
+    private func toggleWindow() {
+        if let panel = playerWindow, panel.isVisible, panel.isKeyWindow {
+            panel.orderOut(nil)
+            updateWindowVisibility()
+        } else {
+            showWindow()
+        }
+    }
+
+    private func updateWindowVisibility() {
+        let visible = playerWindow.map { $0.isVisible && $0.occlusionState.contains(.visible) } ?? false
+        store.setWindowVisible(visible)
+    }
+
+    private func popOut() {
+        if popover.isShown { popover.performClose(nil) }
+        showWindow()
+    }
+
+    private func popIn() {
+        playerWindow?.orderOut(nil)
+        updateWindowVisibility()
+        showPopover()
+    }
+
+    @objc private func closePlayer() {
+        if popover.isShown {
+            popover.performClose(nil)
+        } else if let panel = playerWindow, panel.isKeyWindow {
+            panel.orderOut(nil)
+            updateWindowVisibility()
+        }
+    }
+
+    @objc private func toggleDetached() {
+        store.setDetached(!store.detached)
     }
 
     @objc private func spotifyStateChanged(_ notification: Notification) {
@@ -175,6 +303,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         login.target = self
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
+
+        let detach = NSMenuItem(title: store.detached ? "Zurück in die Menüleiste" : "Als Fenster lösen",
+                                action: #selector(toggleDetached), keyEquivalent: "")
+        detach.target = self
+        menu.addItem(detach)
 
         let visualizer = NSMenuItem(title: "Visualizer in der Menüleiste", action: #selector(toggleVisualizer), keyEquivalent: "")
         visualizer.target = self
@@ -223,7 +356,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     @objc private func editClientID() {
         store.editingClientID = true
-        showPopover()
+        showPlayer()
     }
 
     // MARK: - NSPopoverDelegate

@@ -15,6 +15,7 @@ enum LibraryTab: String, CaseIterable {
 }
 
 struct MainView: View {
+    @Environment(AppStore.self) private var store
     @Environment(PlayerModel.self) private var player
     @Environment(ArtworkModel.self) private var artwork
     @Environment(LyricsModel.self) private var lyrics
@@ -25,30 +26,10 @@ struct MainView: View {
             NowPlayingView()
                 .padding(.horizontal, 14)
                 .padding(.top, 14)
-                .padding(.bottom, 10)
+                .padding(.bottom, store.compact ? 14 : 10)
 
-            EngineCard()
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
-
-            if lyrics.isShown {
-                LyricsView()
-                    .transition(.opacity)
-            } else {
-                TabBar(selection: $tab)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
-
-                Divider().opacity(0.5)
-
-                Group {
-                    switch tab {
-                    case .likes: LikesView()
-                    case .playlists: PlaylistsView()
-                    case .search: SearchView()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if !store.compact {
+                librarySection
             }
         }
         .animation(.easeInOut(duration: 0.25), value: lyrics.isShown)
@@ -63,6 +44,33 @@ struct MainView: View {
             }
         }
         .animation(.easeOut(duration: 0.2), value: player.message)
+    }
+
+    @ViewBuilder
+    private var librarySection: some View {
+        EngineCard()
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+
+        if lyrics.isShown {
+            LyricsView()
+                .transition(.opacity)
+        } else {
+            TabBar(selection: $tab)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+
+            Divider().opacity(0.5)
+
+            Group {
+                switch tab {
+                case .likes: LikesView()
+                case .playlists: PlaylistsView()
+                case .search: SearchView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 }
 

@@ -20,6 +20,7 @@ Browse your likes and playlists, search for new music and play it, without the S
 - **Lives in the menu bar.** No Dock icon and no window. Click the icon and the player folds out.
 - **Cover in focus.** The artwork fills the player, and the whole interface takes on its colors like ambient light.
 - **Sing along.** Time-synced lyrics that scroll with the music; tap a line to jump there.
+- **Pop it out.** Detach the player into a floating window, or hide the library for a clean, cover-only view.
 - **Your library.** Liked songs, playlists and search, with infinite scrolling.
 - **Plays by itself.** A bundled [librespot](https://github.com/librespot-org/librespot) engine runs invisibly as the Spotify Connect device "MiniPlayer". No Spotify app needed.
 - **Live visualizer in the icon.** Four bars (bass → treble) dance to whatever is playing.
@@ -30,6 +31,8 @@ Browse your likes and playlists, search for new music and play it, without the S
 <img src="docs/images/visualizer.gif" alt="Menu bar visualizer" width="411">
 <br><br>
 <img src="docs/images/screens.jpg" alt="Lyrics, playlist and search, each tinted by its cover" width="900">
+<br><br>
+<img src="docs/images/compact.jpg" alt="Detached player in clean cover mode" width="600">
 </div>
 
 > The app's interface is in German.
@@ -75,7 +78,11 @@ That's it. Pick a song and it plays right from MiniPlayer.
 | | |
 |---|---|
 | **Left-click** the icon | Open or close the player |
-| **Right-click** the icon | Launch at login · Visualizer on/off · Sign out · Change Client ID · Quit |
+| **Right-click** the icon | Pop out / back to menu bar · Launch at login · Visualizer on/off · Sign out · Change Client ID · Quit |
+| <kbd>⤢</kbd> button next to the volume | Hide the library and show only the cover (controls appear on hover) |
+| <kbd>⧉</kbd> button next to the volume | Pop the player out into a floating window, or put it back into the menu bar |
+| Drag the cover | Move the detached window |
+| <kbd>⌘W</kbd> | Close the popover or hide the detached window (click the menu bar icon to bring it back) |
 | Device button (bottom left of the player) | Switch playback to your phone, speakers and other devices |
 | Right-click a song | Add to queue, like or unlike, copy link |
 
@@ -160,6 +167,7 @@ Sources/
     Lyrics.swift         LRCLIB lookup and LRC parsing
     LibraryModel.swift   likes, playlists, search
     PlaybackEngine.swift starts and supervises librespot
+    PlayerWindow.swift   floating window for the detached player
     AudioOutput.swift    PCM → CoreAudio, visualizer levels
     Views/               SwiftUI interface
 ```

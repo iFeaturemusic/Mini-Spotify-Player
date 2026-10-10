@@ -38,12 +38,18 @@ enum Screenshots {
         nowPlaying(6)
         let search = popover(store, tab: .search)
 
+        nowPlaying(7)
+        store.setCompact(true)
+        let compact = popover(store, tab: .likes, compact: true)
+        store.setCompact(false)
+
         save(HeroImage(popover: likes), to: folder.appendingPathComponent("hero.jpg"))
         save(ScreensImage(popovers: [lyrics, playlistDetail, search]), to: folder.appendingPathComponent("screens.jpg"))
+        save(CompactImage(window: compact), to: folder.appendingPathComponent("compact.jpg"))
         saveVisualizerGIF(to: folder.appendingPathComponent("visualizer.gif"))
     }
 
-    private static func popover(_ store: AppStore, tab: LibraryTab) -> NSImage {
+    private static func popover(_ store: AppStore, tab: LibraryTab, compact: Bool = false) -> NSImage {
         UserDefaults.standard.set(tab.rawValue, forKey: "tab")
         let view = MainView()
             .environment(store)
@@ -54,7 +60,8 @@ enum Screenshots {
             .environment(store.artwork)
             .environment(store.lyrics)
             .environment(\.screenshotMode, true)
-            .frame(width: RootView.size.width, height: RootView.size.height)
+            .frame(width: RootView.size.width, height: compact ? nil : RootView.size.height)
+            .fixedSize(horizontal: false, vertical: compact)
             .background(Color.popover)
             .environment(\.colorScheme, .dark)
         return image(view, scale: 2)
@@ -255,6 +262,24 @@ private struct Tagline: View {
             .padding(.top, 8)
         }
         .foregroundStyle(.white)
+    }
+}
+
+private struct CompactImage: View {
+    let window: NSImage
+
+    var body: some View {
+        ZStack {
+            Wallpaper()
+            Image(nsImage: window)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: RootView.size.width)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.08)))
+                .shadow(color: .black.opacity(0.5), radius: 30, y: 14)
+        }
+        .frame(width: 900, height: 560)
     }
 }
 
