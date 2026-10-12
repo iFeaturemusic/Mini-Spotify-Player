@@ -25,6 +25,7 @@ Browse your likes and playlists, search for new music and play it, without the S
 - **Plays by itself.** A bundled [librespot](https://github.com/librespot-org/librespot) engine runs invisibly as the Spotify Connect device "MiniPlayer". No Spotify app needed.
 - **Live visualizer in the icon.** Four bars (bass → treble) dance to whatever is playing.
 - **Full control.** Play/pause, skip, seek, volume, shuffle, repeat, like, queue, and switching between your Spotify Connect devices.
+- **Share.** Send the current song via Messages, Mail, AirDrop and more, straight from the cover.
 - **Light on resources.** Native Swift/SwiftUI with no polling while closed. See the [measurements](#performance).
 
 <div align="center">
@@ -84,7 +85,8 @@ That's it. Pick a song and it plays right from MiniPlayer.
 | Drag the cover | Move the detached window |
 | <kbd>⌘W</kbd> | Close the popover or hide the detached window (click the menu bar icon to bring it back) |
 | Device button (bottom left of the player) | Switch playback to your phone, speakers and other devices |
-| Right-click a song | Add to queue, like or unlike, copy link |
+| <kbd>↑</kbd> button on the cover | Share the current song (Spotify link with cover preview) |
+| Right-click a song | Add to queue, like or unlike, share, copy link |
 
 ## Performance
 

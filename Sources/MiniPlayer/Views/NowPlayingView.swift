@@ -42,6 +42,15 @@ struct NowPlayingView: View {
                             player.toggleLike()
                         }
                     }
+                    if let track = player.track, let url = track.webURL {
+                        ShareLink(item: url, subject: Text(track.name), message: Text("\(track.name) – \(track.subtitle)"),
+                                  preview: SharePreview("\(track.name) – \(track.subtitle)",
+                                                        image: Image(nsImage: artwork.cover ?? NSImage()))) {
+                            CircleLabel(systemName: "square.and.arrow.up")
+                        }
+                        .buttonStyle(PressStyle())
+                        .help("Song teilen")
+                    }
                     CircleButton(systemName: "quote.bubble.fill",
                                  tint: lyrics.isShown ? .black : .white,
                                  fill: lyrics.isShown ? accent : nil,
@@ -136,7 +145,7 @@ private struct TrackPill: View {
         .padding(4)
         .background(.ultraThinMaterial, in: Capsule())
         .environment(\.colorScheme, .dark)
-        .frame(maxWidth: 220, alignment: .leading)
+        .frame(maxWidth: 180, alignment: .leading)
     }
 }
 
@@ -149,21 +158,31 @@ private struct CircleButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: 32, height: 32)
-                .background {
-                    if let fill {
-                        Circle().fill(fill)
-                    } else {
-                        Circle().fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
-                    }
-                }
-                .contentShape(Circle())
+            CircleLabel(systemName: systemName, tint: tint, fill: fill)
         }
         .buttonStyle(PressStyle())
         .help(help)
+    }
+}
+
+private struct CircleLabel: View {
+    let systemName: String
+    var tint: Color = .white
+    var fill: Color?
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 32, height: 32)
+            .background {
+                if let fill {
+                    Circle().fill(fill)
+                } else {
+                    Circle().fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
+                }
+            }
+            .contentShape(Circle())
     }
 }
 

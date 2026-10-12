@@ -208,6 +208,8 @@ struct TrackRow: View {
                 Button("Zu Lieblingssongs hinzufügen") { library.setLiked(track, true) }
             }
             if let url = track.webURL {
+                ShareLink("Teilen …", item: url, subject: Text(track.name),
+                          message: Text("\(track.name) – \(track.subtitle)"))
                 Button("Link kopieren") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(url.absoluteString, forType: .string)
