@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/images/icon.png" alt="MiniPlayer icon" width="128">
+
 # MiniPlayer
 
 **A tiny native Spotify player that lives in your Mac menu bar.**
@@ -57,6 +59,20 @@ brew install librespot
 `build.sh` builds the app, bundles librespot into it, signs it and copies it to `/Applications`. A 🎵 icon appears in your menu bar.
 
 If a *Developer ID* or *Apple Development* certificate is available, it is used for signing so macOS only asks for Keychain access once. Otherwise the app is signed ad-hoc.
+
+### Sharing the app with others
+
+```bash
+./build.sh dist
+```
+
+This creates `build/MiniPlayer.zip`, signed with your *Developer ID* (hardened runtime and secure timestamp). If notarization credentials are stored, it is also notarized and stapled, so it opens on other Macs without Gatekeeper warnings. Store the credentials once with an app-specific password from [account.apple.com](https://account.apple.com):
+
+```bash
+xcrun notarytool store-credentials MiniPlayer --apple-id <your Apple ID> --team-id <your team ID>
+```
+
+The bundled librespot binary is Apple Silicon only, so the app runs on M1 or newer.
 
 ## Setup
 

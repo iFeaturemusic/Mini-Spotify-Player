@@ -14,6 +14,10 @@ enum MiniPlayerApp {
         }
 
         #if DEBUG
+        if let index = args.firstIndex(of: "--icon"), index + 1 < args.count {
+            Screenshots.renderIcon(to: args[index + 1])
+            return
+        }
         if let index = args.firstIndex(of: "--screenshots"), index + 1 < args.count {
             Screenshots.run(to: args[index + 1])
             return

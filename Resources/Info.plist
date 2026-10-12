@@ -8,6 +8,8 @@
 	<string>MiniPlayer</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.ifeature.miniplayer</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleExecutable</key>
 	<string>MiniPlayer</string>
 	<key>CFBundlePackageType</key>

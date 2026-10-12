@@ -49,6 +49,17 @@ enum Screenshots {
         saveVisualizerGIF(to: folder.appendingPathComponent("visualizer.gif"))
     }
 
+    /// `swift run MiniPlayer --icon <file.png>` renders the 1024 px app icon master.
+    static func renderIcon(to path: String) {
+        _ = NSApplication.shared
+        let renderer = ImageRenderer(content: AppIconArtwork())
+        renderer.scale = 1
+        guard let cgImage = renderer.cgImage else { return }
+        try? NSBitmapImageRep(cgImage: cgImage).representation(using: .png, properties: [:])?
+            .write(to: URL(fileURLWithPath: path))
+        print("✓ \(path)")
+    }
+
     private static func popover(_ store: AppStore, tab: LibraryTab, compact: Bool = false) -> NSImage {
         UserDefaults.standard.set(tab.rawValue, forKey: "tab")
         let view = MainView()
@@ -116,6 +127,34 @@ enum Screenshots {
             }
         }
         if CGImageDestinationFinalize(destination) { print("✓ \(url.lastPathComponent)") }
+    }
+}
+
+// MARK: - App icon
+
+/// macOS icon grid: 1024 canvas, 824 pt squircle, room for the drop shadow.
+private struct AppIconArtwork: View {
+    private let squircle = RoundedRectangle(cornerRadius: 185, style: .continuous)
+    private let bars: [CGFloat] = [0.55, 1.0, 0.72, 0.42]
+
+    var body: some View {
+        ZStack {
+            ZStack {
+                Color.black
+                HStack(alignment: .center, spacing: 46) {
+                    ForEach(bars.indices, id: \.self) { index in
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(width: 84, height: 120 + bars[index] * 330)
+                    }
+                }
+            }
+            .frame(width: 824, height: 824)
+            .clipShape(squircle)
+            .overlay(squircle.strokeBorder(Color.white.opacity(0.12), lineWidth: 2))
+            .shadow(color: .black.opacity(0.3), radius: 20, y: 12)
+        }
+        .frame(width: 1024, height: 1024)
     }
 }
 
@@ -238,11 +277,12 @@ private struct Tagline: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 16) {
-                BarsGlyph(levels: [0.55, 0.95, 0.7, 0.4])
+                BarsGlyph(levels: [0.55, 1.0, 0.72, 0.42])
                     .scaleEffect(1.9)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(.white)
                     .frame(width: 64, height: 64)
-                    .background(Circle().fill(Color.spotifyGreen))
+                    .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color.black))
+                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).strokeBorder(Color.white.opacity(0.15)))
                 Text("MiniPlayer")
                     .font(.system(size: 54, weight: .heavy))
             }
