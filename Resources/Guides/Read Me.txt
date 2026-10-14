@@ -1,0 +1,43 @@
+MiniPlayer – Spotify in your menu bar
+=====================================
+
+Requirements
+- Mac with Apple silicon (M1 or newer), macOS 14 or later
+- Spotify Premium
+
+Install
+1. Drag MiniPlayer.app into your Applications folder and open it.
+   The app is notarized by Apple. The first time, macOS only asks whether you want to
+   open an app downloaded from the internet: click "Open".
+2. No window opens and there is no Dock icon: MiniPlayer lives in the menu bar at the
+   top right (four bars or a music note). Click it.
+
+Set up (once)
+The app needs a Spotify "Client ID". There are two ways to get one:
+
+  A) Your own Spotify developer app (about 2 minutes)
+     1. Open https://developer.spotify.com/dashboard → "Create app"
+     2. Any name and description; set the redirect URI to exactly:
+        http://127.0.0.1:8898/callback
+     3. Tick "Web API", save, and copy the Client ID.
+
+  B) The Client ID of the person who sent you the app
+     They need to add your Spotify email address under "User Management"
+     in their developer dashboard.
+
+Then:
+1. Paste the Client ID into MiniPlayer → "Continue"
+2. "Sign in with Spotify" → confirm in the browser
+3. Click "Activate" on the "Built-in Player" card → confirm once more in the browser
+Done: pick a song and MiniPlayer plays it by itself (no Spotify app needed).
+
+Tips
+- The interface is in German or English: gear icon next to the tabs → Language.
+- Gear icon: settings for language, start with your Mac, visualizer, window on top, account.
+- Right-click the menu bar icon: settings, pop out as a window, sign out.
+- Speech bubble on the cover: lyrics to sing along.
+- Arrow icon on the cover: share the song.
+- Next to the volume: hide the library (cover only) and pop the player out into a window.
+- Drag the edges of the popped-out window to resize it.
+
+Source code: https://github.com/iFeaturemusic/Mini-Spotify-Player-

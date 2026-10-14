@@ -67,7 +67,7 @@ If a *Developer ID* or *Apple Development* certificate is available, it is used 
 ./build.sh dist
 ```
 
-This creates `build/MiniPlayer.zip`, signed with your *Developer ID* (hardened runtime and secure timestamp). If notarization credentials are stored, it is also notarized and stapled, so it opens on other Macs without Gatekeeper warnings. Store the credentials once with an app-specific password from [account.apple.com](https://account.apple.com):
+This creates `build/MiniPlayer.zip` with the app and a short setup guide in German and English (`Resources/Guides`). The app is signed with your *Developer ID* (hardened runtime and secure timestamp). If notarization credentials are stored, it is also notarized and stapled, so it opens on other Macs without Gatekeeper warnings. Store the credentials once with an app-specific password from [account.apple.com](https://account.apple.com):
 
 ```bash
 xcrun notarytool store-credentials MiniPlayer --apple-id <your Apple ID> --team-id <your team ID>

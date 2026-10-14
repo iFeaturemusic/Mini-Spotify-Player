@@ -1,0 +1,43 @@
+MiniPlayer – Spotify in der Menüleiste
+======================================
+
+Voraussetzungen
+- Mac mit Apple-Chip (M1 oder neuer), macOS 14 oder neuer
+- Spotify Premium
+
+Installieren
+1. MiniPlayer.app in den Ordner "Programme" ziehen und öffnen.
+   Die App ist von Apple geprüft (notarisiert). macOS fragt beim ersten Öffnen nur,
+   ob du die aus dem Internet geladene App öffnen willst: "Öffnen" klicken.
+2. Es öffnet sich KEIN Fenster und es gibt kein Dock-Symbol: Die App lebt oben rechts
+   in der Menüleiste (Symbol mit vier Balken bzw. Musiknote). Darauf klicken.
+
+Einrichten (einmalig)
+Die App braucht eine "Client ID" von Spotify. Dafür gibt es zwei Wege:
+
+  A) Eigene Spotify-Developer-App (ca. 2 Minuten)
+     1. https://developer.spotify.com/dashboard öffnen → "Create app"
+     2. Name/Beschreibung beliebig, Redirect URI genau so eintragen:
+        http://127.0.0.1:8898/callback
+     3. "Web API" anhaken, speichern, die Client ID kopieren.
+
+  B) Client ID von der Person, die dir die App geschickt hat
+     Sie muss dafür deine Spotify-E-Mail-Adresse in ihrem Developer Dashboard
+     unter "User Management" eintragen.
+
+Dann:
+1. Client ID in MiniPlayer einfügen → "Weiter"
+2. "Mit Spotify anmelden" → im Browser bestätigen
+3. Im Player bei "Eingebauter Player" auf "Aktivieren" → noch einmal im Browser bestätigen
+Fertig: Song antippen, MiniPlayer spielt selbst ab (keine Spotify-App nötig).
+
+Tipps
+- Zahnrad neben den Tabs: Einstellungen – Sprache (Deutsch/English), Mit dem Mac starten,
+  Visualizer, Fenster immer im Vordergrund, Konto.
+- Rechtsklick auf das Menüleisten-Symbol: Einstellungen, als Fenster lösen, Abmelden.
+- Sprechblase auf dem Cover: Lyrics zum Mitsingen.
+- Pfeil-Symbol auf dem Cover: Song teilen.
+- Neben der Lautstärke: Liste ausblenden (nur Cover) und Player als Fenster lösen.
+- Das gelöste Fenster lässt sich an den Rändern größer und kleiner ziehen.
+
+Quellcode: https://github.com/iFeaturemusic/Mini-Spotify-Player-

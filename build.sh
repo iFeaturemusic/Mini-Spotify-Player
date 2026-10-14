@@ -1,8 +1,8 @@
 #!/bin/zsh
 # Usage:  ./build.sh           build build/MiniPlayer.app
 #         ./build.sh install   also copy it to /Applications and launch it
-#         ./build.sh dist      signed (and, if credentials are stored, notarized) build/MiniPlayer.zip
-#                              for other Macs. Notarization credentials, once:
+#         ./build.sh dist      build/MiniPlayer.zip for other Macs: signed app (notarized if credentials
+#                              are stored) plus the read-me files. Notarization credentials, once:
 #                              xcrun notarytool store-credentials MiniPlayer --apple-id <id> --team-id <team>
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -63,13 +63,23 @@ if [[ "$MODE" == "dist" ]]; then
   rm -f "$ZIP"
   ditto -c -k --keepParent "$APP" "$ZIP"
   PROFILE="${NOTARY_PROFILE:-MiniPlayer}"
+  NOTARIZED=false
   if xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1; then
     echo "… notarizing (usually 1–5 minutes)"
     xcrun notarytool submit "$ZIP" --keychain-profile "$PROFILE" --wait
     xcrun stapler staple "$APP"
-    rm -f "$ZIP"
-    ditto -c -k --keepParent "$APP" "$ZIP"
     spctl --assess --type execute --verbose "$APP"
+    NOTARIZED=true
+  fi
+
+  # Final archive: MiniPlayer/ with the app and the read-me files (German and English)
+  PACKAGE="build/package/MiniPlayer"
+  rm -rf build/package "$ZIP"
+  mkdir -p "$PACKAGE"
+  ditto "$APP" "$PACKAGE/MiniPlayer.app"
+  cp Resources/Guides/*.txt "$PACKAGE/"
+  ditto -c -k --keepParent "$PACKAGE" "$ZIP"
+  if $NOTARIZED; then
     echo "✓ $ZIP (signed and notarized)"
   else
     echo "✓ $ZIP (signed, NOT notarized: no notarytool profile \"$PROFILE\")"
