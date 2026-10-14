@@ -199,18 +199,18 @@ struct TrackRow: View {
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .contextMenu {
-            Button("Abspielen", action: action)
-            Button("Zur Warteschlange hinzufügen") { player.addToQueue(track) }
+            Button(L("Abspielen"), action: action)
+            Button(L("Zur Warteschlange hinzufügen")) { player.addToQueue(track) }
             Divider()
             if inLikes {
-                Button("Aus Lieblingssongs entfernen") { library.setLiked(track, false) }
+                Button(L("Aus Lieblingssongs entfernen")) { library.setLiked(track, false) }
             } else {
-                Button("Zu Lieblingssongs hinzufügen") { library.setLiked(track, true) }
+                Button(L("Zu Lieblingssongs hinzufügen")) { library.setLiked(track, true) }
             }
             if let url = track.webURL {
-                ShareLink("Teilen …", item: url, subject: Text(track.name),
+                ShareLink(L("Teilen …"), item: url, subject: Text(track.name),
                           message: Text("\(track.name) – \(track.subtitle)"))
-                Button("Link kopieren") {
+                Button(L("Link kopieren")) {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(url.absoluteString, forType: .string)
                 }
@@ -309,7 +309,7 @@ struct ErrorState: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             if let onRetry {
-                Button("Erneut versuchen", action: onRetry)
+                Button(L("Erneut versuchen"), action: onRetry)
                     .controlSize(.small)
             }
         }
@@ -326,23 +326,23 @@ struct EngineCard: View {
         switch engine.status {
         case .needsSetup:
             card(icon: "hifispeaker.fill",
-                 title: "Eingebauter Player",
-                 text: "Einmal im Browser bestätigen, dann spielt MiniPlayer selbst ab. Ohne Spotify-App.",
-                 button: "Aktivieren") { engine.start() }
+                 title: L("Eingebauter Player"),
+                 text: L("Einmal im Browser bestätigen, dann spielt MiniPlayer selbst ab. Ohne Spotify-App."),
+                 button: L("Aktivieren")) { engine.start() }
         case .authorizing:
             card(icon: "safari",
-                 title: "Bestätige im Browser …",
-                 text: "Danach ist der eingebaute Player sofort bereit.",
-                 button: "Abbrechen") { engine.stop() }
+                 title: L("Bestätige im Browser …"),
+                 text: L("Danach ist der eingebaute Player sofort bereit."),
+                 button: L("Abbrechen")) { engine.stop() }
         case .failed(let message):
             card(icon: "exclamationmark.triangle.fill",
-                 title: "Eingebauter Player",
+                 title: L("Eingebauter Player"),
                  text: message,
-                 button: "Neu starten") { engine.restart() }
+                 button: L("Neu starten")) { engine.restart() }
         case .unavailable:
             card(icon: "exclamationmark.triangle.fill",
-                 title: "librespot fehlt",
-                 text: "Installiere es mit: brew install librespot",
+                 title: L("librespot fehlt"),
+                 text: L("Installiere es mit: brew install librespot"),
                  button: nil) {}
         case .stopped, .running:
             EmptyView()

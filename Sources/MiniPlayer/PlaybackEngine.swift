@@ -120,7 +120,7 @@ final class PlaybackEngine {
                 status = .running
             }
         } catch {
-            status = .failed("librespot konnte nicht starten: \(error.localizedDescription)")
+            status = .failed(L("librespot konnte nicht starten: %@", error.localizedDescription))
         }
     }
 
@@ -180,7 +180,7 @@ final class PlaybackEngine {
 
         let tail = logTail()
         if tail.contains("does not support \"free\" accounts") {
-            status = .failed("Spotify Premium nötig: Der eingebaute Player funktioniert nur mit einem Premium-Konto.")
+            status = .failed(L("Spotify Premium nötig: Der eingebaute Player funktioniert nur mit einem Premium-Konto."))
             return
         }
         if tail.localizedCaseInsensitiveContains("BadCredentials") || tail.localizedCaseInsensitiveContains("bad credentials") {
@@ -195,10 +195,10 @@ final class PlaybackEngine {
 
         restartCount += 1
         guard restartCount <= 5 else {
-            status = .failed(Self.shortError(from: tail) ?? "librespot wurde beendet (Code \(code)).")
+            status = .failed(Self.shortError(from: tail) ?? L("librespot wurde beendet (Code %d).", Int(code)))
             return
         }
-        status = .failed("Verbindung verloren – starte neu …")
+        status = .failed(L("Verbindung verloren – starte neu …"))
         let delay = min(60.0, 2.0 * pow(2.0, Double(restartCount)))
         restartTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(delay))

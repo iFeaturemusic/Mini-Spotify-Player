@@ -98,7 +98,7 @@ final class LibraryModel {
                 try await api.setSaved(track, saved: saved)
                 likeChanged(track, saved: saved)
                 player.likeChangedElsewhere(uri: track.uri, saved: saved)
-                player.flash(saved ? "Zu Lieblingssongs hinzugefügt" : "Aus Lieblingssongs entfernt")
+                player.flash(saved ? L("Zu Lieblingssongs hinzugefügt") : L("Aus Lieblingssongs entfernt"))
             } catch {
                 player.show(error)
             }

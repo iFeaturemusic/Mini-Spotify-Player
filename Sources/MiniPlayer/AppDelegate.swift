@@ -1,6 +1,5 @@
 import AppKit
 import SwiftUI
-import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
@@ -37,6 +36,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
         store.player.onStatusChanged = { [weak self] in self?.updateStatusIcon() }
         store.engine.audio.onActivityChanged = { [weak self] active in self?.setVisualizer(active) }
+        AppSettings.shared.onVisualizerChanged = { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshVisualizer() }
+        }
+        AppSettings.shared.onAlwaysOnTopChanged = { [weak self] onTop in
+            MainActor.assumeIsolated { self?.playerWindow?.level = onTop ? .floating : .normal }
+        }
         store.showPlayer = { [weak self] in self?.showPlayer() }
         store.onLayoutChanged = { [weak self] in
             DispatchQueue.main.async { self?.fitToContent(animated: true) }
@@ -139,7 +144,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private static let snapshotEveryTicks = 12
 
     static var visualizerEnabled: Bool {
-        UserDefaults.standard.string(forKey: "visualizerMode") != "off"
+        AppSettings.shared.visualizerEnabled
+    }
+
+    private func refreshVisualizer() {
+        setVisualizer(false)
+        if store.engine.audio.isActive { setVisualizer(true) }
     }
 
     private func setVisualizer(_ active: Bool) {
@@ -224,7 +234,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             let size = view.fittingSize
             if size.height > 0, size != popover.contentSize { popover.contentSize = size }
         }
-        playerWindow?.fitToContent(animated: animated)
+        playerWindow?.applyLayout(compact: store.compactLayout, animated: animated)
     }
 
     // MARK: - Detached window
@@ -234,12 +244,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         playerWindow = panel
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
-        panel.fitToContent(animated: false)
+        panel.applyLayout(compact: store.compactLayout, animated: false)
         updateWindowVisibility()
     }
 
     private func makeWindow() -> PlayerPanel {
-        let panel = PlayerPanel(contentViewController: NSHostingController(rootView: makeRootView()))
+        let host = NSHostingController(rootView: makeRootView())
+        let panel = PlayerPanel(contentViewController: host)
+        panel.heightForWidth = { [weak host] width in
+            host?.sizeThatFits(in: CGSize(width: width, height: 10_000)).height ?? width
+        }
+        panel.level = AppSettings.shared.alwaysOnTop ? .floating : .normal
         if !panel.setFrameUsingName("MiniPlayerWindow"), let anchor = statusItem.button?.window?.frame {
             panel.setFrameTopLeftPoint(NSPoint(x: anchor.midX - RootView.size.width / 2, y: anchor.minY - 8))
         }
@@ -299,32 +314,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         if popover.isShown { popover.performClose(nil) }
         let menu = NSMenu()
 
-        let login = NSMenuItem(title: "Bei Anmeldung starten", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
-        login.target = self
-        login.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        menu.addItem(login)
-
-        let detach = NSMenuItem(title: store.detached ? "Zurück in die Menüleiste" : "Als Fenster lösen",
-                                action: #selector(toggleDetached), keyEquivalent: "")
-        detach.target = self
-        menu.addItem(detach)
-
-        let visualizer = NSMenuItem(title: "Visualizer in der Menüleiste", action: #selector(toggleVisualizer), keyEquivalent: "")
-        visualizer.target = self
-        visualizer.state = Self.visualizerEnabled ? .on : .off
-        menu.addItem(visualizer)
-        menu.addItem(.separator())
+        func item(_ title: String, _ action: Selector, state: Bool? = nil) {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            item.target = self
+            if let state { item.state = state ? .on : .off }
+            menu.addItem(item)
+        }
 
         if store.auth.isLoggedIn {
-            let logout = NSMenuItem(title: "Von Spotify abmelden", action: #selector(logout), keyEquivalent: "")
-            logout.target = self
-            menu.addItem(logout)
+            item(L("Einstellungen …"), #selector(openSettings))
+            menu.addItem(.separator())
         }
-        let clientID = NSMenuItem(title: "Client ID ändern …", action: #selector(editClientID), keyEquivalent: "")
-        clientID.target = self
-        menu.addItem(clientID)
+        item(store.detached ? L("Zurück in die Menüleiste") : L("Als Fenster lösen"), #selector(toggleDetached))
+        item(L("Bei Anmeldung starten"), #selector(toggleLaunchAtLogin), state: AppSettings.shared.launchAtLogin)
+        item(L("Visualizer in der Menüleiste"), #selector(toggleVisualizer), state: Self.visualizerEnabled)
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "MiniPlayer beenden", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        if store.auth.isLoggedIn {
+            item(L("Von Spotify abmelden"), #selector(logout))
+        }
+        item(L("Client ID ändern …"), #selector(editClientID))
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: L("MiniPlayer beenden"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
@@ -332,18 +342,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
 
     @objc private func toggleVisualizer() {
-        UserDefaults.standard.set(Self.visualizerEnabled ? "off" : "on", forKey: "visualizerMode")
-        setVisualizer(false)
-        if store.engine.audio.isActive { setVisualizer(true) }
+        AppSettings.shared.setVisualizer(!Self.visualizerEnabled)
+    }
+
+    @objc private func openSettings() {
+        store.showSettings(true)
+        showPlayer()
     }
 
     @objc private func toggleLaunchAtLogin() {
         do {
-            if SMAppService.mainApp.status == .enabled {
-                try SMAppService.mainApp.unregister()
-            } else {
-                try SMAppService.mainApp.register()
-            }
+            try AppSettings.shared.setLaunchAtLogin(!AppSettings.shared.launchAtLogin)
         } catch {
             NSApp.activate()
             NSAlert(error: error).runModal()

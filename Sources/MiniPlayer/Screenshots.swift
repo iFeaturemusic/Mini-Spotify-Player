@@ -43,6 +43,19 @@ enum Screenshots {
         let compact = popover(store, tab: .likes, compact: true)
         store.setCompact(false)
 
+        if CommandLine.arguments.contains("--with-settings") {
+            store.showSettings(true)
+            AppSettings.shared.setLanguage(.de)
+            let settingsGerman = popover(store, tab: .likes)
+            AppSettings.shared.setLanguage(.en)
+            let settingsEnglish = popover(store, tab: .likes)
+            store.showSettings(false)
+            let likesEnglish = popover(store, tab: .likes)
+            AppSettings.shared.setLanguage(.system)
+            save(ScreensImage(popovers: [settingsGerman, settingsEnglish, likesEnglish]),
+                 to: folder.appendingPathComponent("settings-preview.jpg"))
+        }
+
         save(HeroImage(popover: likes), to: folder.appendingPathComponent("hero.jpg"))
         save(ScreensImage(popovers: [lyrics, playlistDetail, search]), to: folder.appendingPathComponent("screens.jpg"))
         save(CompactImage(window: compact), to: folder.appendingPathComponent("compact.jpg"))

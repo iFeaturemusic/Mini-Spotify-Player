@@ -12,6 +12,8 @@ final class AppStore {
     let lyrics = LyricsModel()
 
     var editingClientID = false
+    /// Settings page replaces the library section (like the lyrics view).
+    private(set) var settingsShown = false
     /// Library hidden, only the cover is shown.
     private(set) var compact = UserDefaults.standard.bool(forKey: "compact")
     /// Player lives in its own floating window instead of the menu bar popover.
@@ -37,7 +39,10 @@ final class AppStore {
         }
         lyrics.onVisibilityChanged = { [weak self] visible in
             self?.player.setFastTicks(visible)
-            if visible, self?.compact == true { self?.setCompact(false) }
+            if visible {
+                self?.settingsShown = false
+                if self?.compact == true { self?.setCompact(false) }
+            }
         }
         player.onLikeChanged = { [weak library] track, saved in
             library?.likeChanged(track, saved: saved)
@@ -65,11 +70,27 @@ final class AppStore {
 
     // MARK: - Layout
 
+    /// Compact only applies to the player itself, not to the setup and login screens.
+    var compactLayout: Bool {
+        compact && auth.isLoggedIn && !auth.clientID.isEmpty && !editingClientID
+    }
+
+    func showSettings(_ show: Bool) {
+        settingsShown = show
+        if show {
+            lyrics.hide()
+            if compact { setCompact(false) }
+        }
+    }
+
     func setCompact(_ value: Bool) {
         guard value != compact else { return }
         compact = value
         UserDefaults.standard.set(value, forKey: "compact")
-        if value { lyrics.hide() }
+        if value {
+            lyrics.hide()
+            settingsShown = false
+        }
         onLayoutChanged?()
     }
 
@@ -104,6 +125,7 @@ final class AppStore {
     }
 
     func logout() {
+        settingsShown = false
         auth.logout()
     }
 

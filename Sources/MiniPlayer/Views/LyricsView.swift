@@ -9,7 +9,7 @@ struct LyricsView: View {
                 Label("Lyrics", systemImage: "quote.bubble.fill")
                     .font(.system(size: 13, weight: .bold))
                 Spacer()
-                IconButton(systemName: "xmark", size: 11, tint: .secondary, help: "Lyrics schließen") {
+                IconButton(systemName: "xmark", size: 11, tint: .secondary, help: L("Lyrics schließen")) {
                     lyrics.hide()
                 }
             }
@@ -25,19 +25,19 @@ struct LyricsView: View {
                 case .loading:
                     ProgressView().controlSize(.small).frame(maxHeight: .infinity)
                 case .instrumental:
-                    message("Instrumental, kein Text zum Mitsingen.", icon: "pianokeys")
+                    message(L("Instrumental, kein Text zum Mitsingen."), icon: "pianokeys")
                 case .notFound:
-                    message("Für diesen Song wurden keine Lyrics gefunden.", icon: "text.page.slash")
+                    message(L("Für diesen Song wurden keine Lyrics gefunden."), icon: "text.page.slash")
                 case .failed:
-                    ErrorState(text: "Lyrics konnten nicht geladen werden.") { lyrics.retry() }
+                    ErrorState(text: L("Lyrics konnten nicht geladen werden.")) { lyrics.retry() }
                         .frame(maxHeight: .infinity, alignment: .top)
                 case .idle:
-                    message("Starte einen Song, um die Lyrics zu sehen.", icon: "music.mic")
+                    message(L("Starte einen Song, um die Lyrics zu sehen."), icon: "music.mic")
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            Text("Lyrics von LRCLIB")
+            Text(L("Lyrics von LRCLIB"))
                 .font(.system(size: 9))
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 6)

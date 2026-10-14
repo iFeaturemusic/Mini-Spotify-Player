@@ -21,7 +21,7 @@ final class LoopbackServer {
                     case .ready:
                         onReady()
                     case .failed(let error):
-                        self?.finish(.failure(AuthError("Port \(port) ist belegt: \(error.localizedDescription)")))
+                        self?.finish(.failure(AuthError(L("Port %d ist belegt: %@", Int(port), error.localizedDescription))))
                     default:
                         break
                     }
@@ -33,7 +33,7 @@ final class LoopbackServer {
                 self.listener = listener
 
                 let work = DispatchWorkItem { [weak self] in
-                    self?.finish(.failure(AuthError("Zeitüberschreitung bei der Anmeldung.")))
+                    self?.finish(.failure(AuthError(L("Zeitüberschreitung bei der Anmeldung."))))
                 }
                 timeout = work
                 DispatchQueue.main.asyncAfter(deadline: .now() + 300, execute: work)
@@ -87,10 +87,10 @@ final class LoopbackServer {
     }
 
     private static func page(success: Bool) -> String {
-        let title = success ? "Angemeldet ✓" : "Anmeldung abgebrochen"
+        let title = success ? L("Angemeldet ✓") : L("Anmeldung abgebrochen")
         let text = success
-            ? "Du kannst diesen Tab schließen und den Player oben in der Menüleiste benutzen."
-            : "Versuche es im Player erneut."
+            ? L("Du kannst diesen Tab schließen und den Player oben in der Menüleiste benutzen.")
+            : L("Versuche es im Player erneut.")
         return """
         <!doctype html><html lang="de"><meta charset="utf-8"><title>MiniPlayer</title>
         <body style="margin:0;height:100vh;display:grid;place-items:center;background:#121212;color:#fff;font-family:-apple-system,system-ui,sans-serif">

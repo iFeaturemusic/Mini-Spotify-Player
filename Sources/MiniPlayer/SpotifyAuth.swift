@@ -83,10 +83,10 @@ final class SpotifyAuth {
                 let param: (String) -> String? = { name in items.first { $0.name == name }?.value }
 
                 if let error = param("error") {
-                    throw AuthError(error == "access_denied" ? "Anmeldung wurde abgelehnt." : "Spotify-Fehler: \(error)")
+                    throw AuthError(error == "access_denied" ? L("Anmeldung wurde abgelehnt.") : L("Spotify-Fehler: %@", error))
                 }
                 guard param("state") == state, let code = param("code") else {
-                    throw AuthError("Ungültige Antwort von Spotify.")
+                    throw AuthError(L("Ungültige Antwort von Spotify."))
                 }
 
                 try await requestToken([
@@ -130,7 +130,7 @@ final class SpotifyAuth {
 // Re-read every time: Spotify may rotate the token, and another process may have refreshed it.
             refreshToken = Keychain.get("refreshToken") ?? refreshToken
             guard isLoggedIn, let refresh = refreshToken else {
-                throw AuthError("Nicht angemeldet.")
+                throw AuthError(L("Nicht angemeldet."))
             }
             do {
                 try await requestToken([
@@ -140,9 +140,9 @@ final class SpotifyAuth {
                 ])
             } catch let error as AuthError where error.code == "invalid_grant" || error.code == "invalid_client" {
                 logout()
-                throw AuthError("Sitzung abgelaufen – bitte neu anmelden.")
+                throw AuthError(L("Sitzung abgelaufen – bitte neu anmelden."))
             }
-            guard let token else { throw AuthError("Kein Token erhalten.") }
+            guard let token else { throw AuthError(L("Kein Token erhalten.")) }
             return token
         }
         refreshTask = task
@@ -166,7 +166,7 @@ final class SpotifyAuth {
             let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             let code = object?["error"] as? String
             let description = object?["error_description"] as? String
-            throw AuthError(description ?? code ?? "Token-Fehler (\(status))", code: code)
+            throw AuthError(description ?? code ?? L("Token-Fehler (%d)", status), code: code)
         }
 
         let decoded = try JSONDecoder.spotify.decode(TokenResponse.self, from: data)

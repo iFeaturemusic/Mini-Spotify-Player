@@ -38,7 +38,7 @@ struct NowPlayingView: View {
                     if player.track != nil {
                         CircleButton(systemName: player.isLiked ? "heart.fill" : "heart",
                                      tint: player.isLiked ? accent : .white,
-                                     help: player.isLiked ? "Aus Lieblingssongs entfernen" : "Zu Lieblingssongs hinzufügen") {
+                                     help: player.isLiked ? L("Aus Lieblingssongs entfernen") : L("Zu Lieblingssongs hinzufügen")) {
                             player.toggleLike()
                         }
                     }
@@ -49,7 +49,7 @@ struct NowPlayingView: View {
                             CircleLabel(systemName: "square.and.arrow.up")
                         }
                         .buttonStyle(PressStyle())
-                        .help("Song teilen")
+                        .help(L("Song teilen"))
                     }
                     CircleButton(systemName: "quote.bubble.fill",
                                  tint: lyrics.isShown ? .black : .white,
@@ -73,12 +73,12 @@ struct NowPlayingView: View {
                 VolumeControl()
                 IconButton(systemName: store.compact ? "rectangle.expand.vertical" : "rectangle.compress.vertical",
                            size: 11, tint: .secondary,
-                           help: store.compact ? "Bibliothek einblenden" : "Nur das Cover zeigen") {
+                           help: store.compact ? L("Bibliothek einblenden") : L("Nur das Cover zeigen")) {
                     store.setCompact(!store.compact)
                 }
                 IconButton(systemName: store.detached ? "menubar.arrow.up.rectangle" : "macwindow.on.rectangle",
                            size: 11, tint: .secondary,
-                           help: store.detached ? "Zurück in die Menüleiste" : "Als Fenster lösen") {
+                           help: store.detached ? L("Zurück in die Menüleiste") : L("Als Fenster lösen")) {
                     store.setDetached(!store.detached)
                 }
             }
@@ -107,18 +107,18 @@ struct NowPlayingView: View {
     private var controls: some View {
         HStack(spacing: 0) {
             IconButton(systemName: "shuffle", size: 13,
-                       tint: player.shuffle ? accent : .white.opacity(0.75), help: "Zufallswiedergabe") {
+                       tint: player.shuffle ? accent : .white.opacity(0.75), help: L("Zufallswiedergabe")) {
                 player.toggleShuffle()
             }
             Spacer()
-            IconButton(systemName: "backward.fill", size: 16, tint: .white, help: "Zurück") { player.previous() }
+            IconButton(systemName: "backward.fill", size: 16, tint: .white, help: L("Vorheriger Titel")) { player.previous() }
             Spacer()
             PlayCircle(playing: player.isPlaying, size: 40) { player.togglePlay() }
             Spacer()
-            IconButton(systemName: "forward.fill", size: 16, tint: .white, help: "Weiter") { player.next() }
+            IconButton(systemName: "forward.fill", size: 16, tint: .white, help: L("Nächster Titel")) { player.next() }
             Spacer()
             IconButton(systemName: player.repeatMode == "track" ? "repeat.1" : "repeat", size: 13,
-                       tint: player.repeatMode == "off" ? .white.opacity(0.75) : accent, help: "Wiederholen") {
+                       tint: player.repeatMode == "off" ? .white.opacity(0.75) : accent, help: L("Wiederholen")) {
                 player.cycleRepeat()
             }
         }
@@ -132,9 +132,9 @@ private struct TrackPill: View {
         HStack(spacing: 8) {
             RemoteImage(url: player.track?.coverURL(60), size: 28, radius: 14)
             VStack(alignment: .leading, spacing: 1) {
-                Text(player.track?.name ?? "Gerade läuft nichts")
+                Text(player.track?.name ?? L("Gerade läuft nichts"))
                     .font(.system(size: 12, weight: .semibold))
-                Text(player.track?.subtitle ?? "Wähle unten einen Song aus")
+                Text(player.track?.subtitle ?? L("Wähle unten einen Song aus"))
                     .font(.system(size: 10))
                     .foregroundStyle(.white.opacity(0.75))
             }
@@ -243,13 +243,13 @@ struct DeviceMenu: View {
     var body: some View {
         Menu {
             if player.devices.isEmpty {
-                Text("Keine Geräte gefunden")
+                Text(L("Keine Geräte gefunden"))
             }
             ForEach(player.devices, id: \.self) { device in
                 Button {
                     player.select(device)
                 } label: {
-                    let name = device.id == PlaybackEngine.deviceID ? "Dieser Mac (MiniPlayer)" : device.name
+                    let name = device.id == PlaybackEngine.deviceID ? L("Dieser Mac (MiniPlayer)") : device.name
                     if device.isActive == true {
                         Label(name, systemImage: "checkmark")
                     } else {
@@ -259,9 +259,9 @@ struct DeviceMenu: View {
             }
             Divider()
             if engine.hasCredentials {
-                Button("Eingebauten Player neu starten") { engine.restart() }
+                Button(L("Eingebauten Player neu starten")) { engine.restart() }
             }
-            Button("Geräteliste aktualisieren") {
+            Button(L("Geräteliste aktualisieren")) {
                 Task { await player.loadDevices() }
             }
         } label: {
@@ -278,11 +278,11 @@ struct DeviceMenu: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .help("Wiedergabegerät")
+        .help(L("Wiedergabegerät"))
     }
 
     private var deviceLabel: String {
-        guard let device = player.device else { return "Gerät wählen" }
-        return device.id == PlaybackEngine.deviceID ? "Dieser Mac" : device.name
+        guard let device = player.device else { return L("Gerät wählen") }
+        return device.id == PlaybackEngine.deviceID ? L("Dieser Mac") : device.name
     }
 }

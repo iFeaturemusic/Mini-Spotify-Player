@@ -246,7 +246,7 @@ final class PlayerModel {
         Task {
             do {
                 try await api.send("POST", "/me/player/queue", query: ["uri": track.uri])
-                flash("Zur Warteschlange hinzugefügt")
+                flash(L("Zur Warteschlange hinzugefügt"))
             } catch {
                 show(error)
             }
@@ -367,17 +367,17 @@ final class PlayerModel {
     private func pickDevice() async throws -> String {
         if engine.isAvailable {
             guard engine.hasCredentials else {
-                throw SpotifyError(status: 0, message: "Aktiviere zuerst den eingebauten Player (Button oben).", reason: "ENGINE_SETUP")
+                throw SpotifyError(status: 0, message: L("Aktiviere zuerst den eingebauten Player (Button oben)."), reason: "ENGINE_SETUP")
             }
             if !engine.isRunning {
-                flash("Starte eingebauten Player …")
+                flash(L("Starte eingebauten Player …"))
                 engine.start()
             }
             for _ in 0..<24 {
                 if let list = try? await fetchDevices(),
                    let own = list.first(where: { $0.id == PlaybackEngine.deviceID || $0.name == PlaybackEngine.deviceName }),
                    let id = own.id {
-                    if message == "Starte eingebauten Player …" { message = nil }
+                    if message == L("Starte eingebauten Player …") { message = nil }
                     return id
                 }
                 try? await Task.sleep(for: .milliseconds(500))
@@ -385,7 +385,7 @@ final class PlayerModel {
         }
         let list = try await fetchDevices()
         guard let id = (list.first { $0.isActive == true } ?? list.first)?.id else {
-            throw SpotifyError(status: 404, message: "Kein Wiedergabegerät gefunden.", reason: "NO_DEVICE")
+            throw SpotifyError(status: 404, message: L("Kein Wiedergabegerät gefunden."), reason: "NO_DEVICE")
         }
         return id
     }

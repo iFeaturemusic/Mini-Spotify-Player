@@ -5,6 +5,8 @@ enum LibraryTab: String, CaseIterable {
     case playlists = "Playlists"
     case search = "Suche"
 
+    var title: String { L(rawValue) }
+
     var icon: String {
         switch self {
         case .likes: "heart.fill"
@@ -33,6 +35,7 @@ struct MainView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: lyrics.isShown)
+        .animation(.easeInOut(duration: 0.25), value: store.settingsShown)
         .background { AmbientBackground() }
         .environment(\.accent, artwork.accent)
         .tint(artwork.accent)
@@ -52,7 +55,10 @@ struct MainView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
 
-        if lyrics.isShown {
+        if store.settingsShown {
+            SettingsView()
+                .transition(.opacity)
+        } else if lyrics.isShown {
             LyricsView()
                 .transition(.opacity)
         } else {
@@ -96,13 +102,14 @@ private struct AmbientBackground: View {
 
 private struct TabBar: View {
     @Binding var selection: LibraryTab
+    @Environment(AppStore.self) private var store
 
     var body: some View {
         HStack(spacing: 6) {
             ForEach(LibraryTab.allCases, id: \.self) { tab in
                 let selected = selection == tab
                 Button { selection = tab } label: {
-                    Label(tab.rawValue, systemImage: tab.icon)
+                    Label(tab.title, systemImage: tab.icon)
                         .font(.system(size: 11, weight: .semibold))
                         .padding(.horizontal, 11)
                         .padding(.vertical, 5)
@@ -113,6 +120,9 @@ private struct TabBar: View {
                 .buttonStyle(.plain)
             }
             Spacer()
+            IconButton(systemName: "gearshape", size: 12, tint: .secondary, help: L("Einstellungen")) {
+                store.showSettings(true)
+            }
         }
     }
 }
@@ -147,11 +157,11 @@ private struct LikesView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SectionHeader(title: "Lieblingssongs", detail: library.likesTotal.map { "\($0) Songs" }) {
-                IconButton(systemName: "arrow.clockwise", size: 11, tint: .secondary, help: "Neu laden") {
+            SectionHeader(title: L("Lieblingssongs"), detail: library.likesTotal.map { L("%d Songs", $0) }) {
+                IconButton(systemName: "arrow.clockwise", size: 11, tint: .secondary, help: L("Neu laden")) {
                     Task { await library.loadLikes(reset: true) }
                 }
-                IconButton(systemName: "shuffle", size: 12, tint: .secondary, help: "Zufällig abspielen") {
+                IconButton(systemName: "shuffle", size: 12, tint: .secondary, help: L("Zufällig abspielen")) {
                     library.playAllLikes(shuffled: true)
                 }
                 PlayCircle(playing: false, size: 28, color: accent) {
@@ -161,7 +171,7 @@ private struct LikesView: View {
             }
             TrackList(tracks: library.likes,
                       loading: library.likesLoading,
-                      emptyText: "Noch keine Lieblingssongs.",
+                      emptyText: L("Noch keine Lieblingssongs."),
                       error: library.likesError,
                       inLikes: true,
                       onPlay: { library.playLike(at: $0) },
@@ -182,8 +192,8 @@ private struct PlaylistsView: View {
             PlaylistDetailView(playlist: playlist)
         } else {
             VStack(spacing: 0) {
-                SectionHeader(title: "Deine Playlists", detail: library.playlists.isEmpty ? nil : "\(library.playlists.count)") {
-                    IconButton(systemName: "arrow.clockwise", size: 11, tint: .secondary, help: "Neu laden") {
+                SectionHeader(title: L("Deine Playlists"), detail: library.playlists.isEmpty ? nil : "\(library.playlists.count)") {
+                    IconButton(systemName: "arrow.clockwise", size: 11, tint: .secondary, help: L("Neu laden")) {
                         Task { await library.loadPlaylists(reset: true) }
                     }
                 }
@@ -201,7 +211,7 @@ private struct PlaylistsView: View {
                     } else if let error = library.playlistsError, library.playlists.isEmpty {
                         ErrorState(text: error) { Task { await library.loadPlaylists(reset: true) } }
                     } else if library.playlists.isEmpty {
-                        Text("Keine Playlists gefunden.")
+                        Text(L("Keine Playlists gefunden."))
                             .font(.system(size: 12)).foregroundStyle(.secondary).padding(.top, 40)
                     }
                 }
@@ -239,7 +249,7 @@ private struct PlaylistRow: View {
     private var subtitle: String {
         var parts: [String] = []
         if let owner = playlist.owner?.displayName { parts.append(owner) }
-        if let total = playlist.total { parts.append("\(total) Songs") }
+        if let total = playlist.total { parts.append(L("%d Songs", total)) }
         return parts.joined(separator: " · ")
     }
 }
@@ -254,15 +264,15 @@ private struct PlaylistDetailView: View {
         let isThisPlaying = player.isPlaying && player.contextURI == playlist.uri
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                IconButton(systemName: "chevron.left", size: 12, help: "Zurück") { library.closePlaylist() }
+                IconButton(systemName: "chevron.left", size: 12, help: L("Zurück")) { library.closePlaylist() }
                 RemoteImage(url: playlist.images?.url(fitting: 120), size: 42)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(playlist.name).font(.system(size: 13, weight: .bold)).lineLimit(1)
-                    Text(playlist.total.map { "\($0) Songs" } ?? "Playlist")
+                    Text(playlist.total.map { L("%d Songs", $0) } ?? "Playlist")
                         .font(.system(size: 10)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 4)
-                IconButton(systemName: "shuffle", size: 12, tint: .secondary, help: "Zufällig abspielen") {
+                IconButton(systemName: "shuffle", size: 12, tint: .secondary, help: L("Zufällig abspielen")) {
                     library.playPlaylist(playlist, shuffled: true)
                 }
                 PlayCircle(playing: isThisPlaying, size: 30, color: accent) {
@@ -281,7 +291,7 @@ private struct PlaylistDetailView: View {
             if library.playlistTracksHidden {
                 VStack(spacing: 8) {
                     Image(systemName: "lock").font(.system(size: 20)).foregroundStyle(.secondary)
-                    Text("Spotify zeigt die Songs nur für eigene Playlists an.\nAbspielen funktioniert trotzdem.")
+                    Text(L("Spotify zeigt die Songs nur für eigene Playlists an.\nAbspielen funktioniert trotzdem."))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -292,7 +302,7 @@ private struct PlaylistDetailView: View {
             } else {
                 TrackList(tracks: library.playlistTracks,
                           loading: library.playlistTracksLoading,
-                          emptyText: "Diese Playlist ist leer.",
+                          emptyText: L("Diese Playlist ist leer."),
                           error: library.playlistTracksError,
                           onPlay: { library.playPlaylistTrack(at: $0) },
                           onReachEnd: { Task { await library.loadPlaylistTracks() } },
@@ -320,7 +330,7 @@ private struct SearchView: View {
                     Text(library.query).font(.system(size: 13))
                     Spacer(minLength: 0)
                 } else {
-                    TextField("Songs, Künstler, Alben …", text: $library.query)
+                    TextField(L("Songs, Künstler, Alben …"), text: $library.query)
                         .textFieldStyle(.plain)
                         .font(.system(size: 13))
                         .focused($focused)
@@ -341,7 +351,7 @@ private struct SearchView: View {
 
             TrackList(tracks: library.results,
                       loading: library.searching,
-                      emptyText: library.query.isEmpty ? "Finde neue Songs auf Spotify." : "Keine Treffer.",
+                      emptyText: library.query.isEmpty ? L("Finde neue Songs auf Spotify.") : L("Keine Treffer."),
                       error: library.searchError,
                       onPlay: { library.playResult(at: $0) },
                       onReachEnd: { Task { await library.loadMoreResults() } })

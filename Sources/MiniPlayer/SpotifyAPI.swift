@@ -13,26 +13,24 @@ struct SpotifyError: LocalizedError {
 
     var userMessage: String {
         switch reason {
-        case "PREMIUM_REQUIRED": return "Für die Steuerung braucht Spotify ein Premium-Konto."
-        case "NO_ACTIVE_DEVICE": return "Kein aktives Gerät gefunden."
+        case "PREMIUM_REQUIRED": return L("Für die Steuerung braucht Spotify ein Premium-Konto.")
+        case "NO_ACTIVE_DEVICE": return L("Kein aktives Gerät gefunden.")
         default: break
         }
         if status == 403 && message.localizedCaseInsensitiveContains("not be registered") {
-            return "Spotify verweigert den Zugriff: Dein Konto ist in der Developer-App nicht freigeschaltet. "
-                + "Im Dashboard unter „User Management“ deine Spotify-E-Mail eintragen."
+            return L("Spotify verweigert den Zugriff: Dein Konto ist in der Developer-App nicht freigeschaltet. Im Dashboard unter „User Management“ deine Spotify-E-Mail eintragen.")
         }
         if status == 403 && message.localizedCaseInsensitiveContains("scope") {
-            return "Spotify verweigert den Zugriff (403): fehlende Berechtigung. Bitte abmelden und neu anmelden."
+            return L("Spotify verweigert den Zugriff (403): fehlende Berechtigung. Bitte abmelden und neu anmelden.")
         }
         if status == 403 && message.lowercased() == "forbidden" {
-            return "Spotify verweigert den Zugriff (403). Seit 2026 funktionieren eigene Developer-Apps "
-                + "nur, wenn das Konto des App-Besitzers Spotify Premium hat."
+            return L("Spotify verweigert den Zugriff (403). Seit 2026 funktionieren eigene Developer-Apps nur, wenn das Konto des App-Besitzers Spotify Premium hat.")
         }
         if status == 403 {
-            return "Spotify verweigert den Zugriff (403): \(message)"
+            return L("Spotify verweigert den Zugriff (403): %@", message)
         }
         if status == 429 {
-            return "Zu viele Anfragen – Spotify bremst kurz. Gleich nochmal versuchen."
+            return L("Zu viele Anfragen – Spotify bremst kurz. Gleich nochmal versuchen.")
         }
         return message
     }
