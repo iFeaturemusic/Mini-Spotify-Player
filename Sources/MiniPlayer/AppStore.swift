@@ -47,6 +47,9 @@ final class AppStore {
         player.onLikeChanged = { [weak library] track, saved in
             library?.likeChanged(track, saved: saved)
         }
+        AppSettings.shared.onQualityChanged = { [weak self] _ in
+            MainActor.assumeIsolated { self?.restartEngineKeepingPlayback() }
+        }
         auth.onLogin = { [weak self] in self?.didLogin() }
         auth.onLogout = { [weak self] in
             self?.player.reset()
@@ -66,6 +69,19 @@ final class AppStore {
 
     func terminate() {
         engine.stop()
+    }
+
+    /// librespot reads the bitrate at start, so a new quality needs a restart.
+    /// If MiniPlayer itself was playing, playback resumes where it was.
+    private func restartEngineKeepingPlayback() {
+        guard engine.isRunning else { return }
+        let wasPlayingHere = player.isPlaying && player.device?.id == PlaybackEngine.deviceID
+        engine.restart()
+        guard wasPlayingHere else { return }
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            await player.startPlayback()
+        }
     }
 
     // MARK: - Layout

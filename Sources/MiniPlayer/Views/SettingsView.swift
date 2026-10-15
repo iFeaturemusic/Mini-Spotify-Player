@@ -70,6 +70,24 @@ struct SettingsView: View {
                                 .controlSize(.small)
                                 .disabled(!engine.hasCredentials)
                         }
+                        divider
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(L("Audioqualität")).font(.system(size: 12))
+                                Text(L("Beim Ändern startet der Player kurz neu."))
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 8)
+                            Picker("", selection: Binding(get: { settings.quality }, set: { settings.setQuality($0) })) {
+                                ForEach(StreamQuality.allCases) { Text($0.title).tag($0) }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .fixedSize()
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
                     }
 
                     section(L("Über")) {

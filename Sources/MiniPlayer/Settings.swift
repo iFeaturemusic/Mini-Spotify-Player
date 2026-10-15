@@ -7,6 +7,20 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+/// Streaming bitrate of the built-in player (librespot `--bitrate`).
+enum StreamQuality: Int, CaseIterable, Identifiable {
+    case low = 96, normal = 160, high = 320
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .low: L("Niedrig (96 kbit/s)")
+        case .normal: L("Normal (160 kbit/s)")
+        case .high: L("Hoch (320 kbit/s)")
+        }
+    }
+}
+
 /// User preferences from the settings page. Observable, so the UI updates live
 /// (including the language, which `L()` reads).
 @Observable
@@ -17,9 +31,11 @@ final class AppSettings: @unchecked Sendable {
     private(set) var visualizerEnabled: Bool
     private(set) var alwaysOnTop: Bool
     private(set) var launchAtLogin: Bool
+    private(set) var quality: StreamQuality
 
     @ObservationIgnored var onVisualizerChanged: ((Bool) -> Void)?
     @ObservationIgnored var onAlwaysOnTopChanged: ((Bool) -> Void)?
+    @ObservationIgnored var onQualityChanged: ((StreamQuality) -> Void)?
 
     private init() {
         let defaults = UserDefaults.standard
@@ -27,6 +43,7 @@ final class AppSettings: @unchecked Sendable {
         visualizerEnabled = defaults.string(forKey: "visualizerMode") != "off"
         alwaysOnTop = defaults.object(forKey: "alwaysOnTop") as? Bool ?? true
         launchAtLogin = SMAppService.mainApp.status == .enabled
+        quality = StreamQuality(rawValue: defaults.integer(forKey: "streamQuality")) ?? .high
     }
 
     var isEnglish: Bool {
@@ -52,6 +69,13 @@ final class AppSettings: @unchecked Sendable {
         alwaysOnTop = value
         UserDefaults.standard.set(value, forKey: "alwaysOnTop")
         onAlwaysOnTopChanged?(value)
+    }
+
+    func setQuality(_ value: StreamQuality) {
+        guard value != quality else { return }
+        quality = value
+        UserDefaults.standard.set(value.rawValue, forKey: "streamQuality")
+        onQualityChanged?(value)
     }
 
     func setLaunchAtLogin(_ value: Bool) throws {
@@ -219,4 +243,9 @@ private let englishStrings: [String: String] = [
     "Über": "About",
     "Quellcode auf GitHub": "Source code on GitHub",
     "Konnte nicht geändert werden: %@": "Could not be changed: %@",
+    "Audioqualität": "Audio quality",
+    "Niedrig (96 kbit/s)": "Low (96 kbit/s)",
+    "Normal (160 kbit/s)": "Normal (160 kbit/s)",
+    "Hoch (320 kbit/s)": "High (320 kbit/s)",
+    "Beim Ändern startet der Player kurz neu.": "The player restarts briefly when changed.",
 ]

@@ -77,7 +77,7 @@ final class PlaybackEngine {
         var arguments = [
             "--name", Self.deviceName,
             "--device-type", "computer",
-            "--bitrate", "320",
+            "--bitrate", String(AppSettings.shared.quality.rawValue),
             "--cache", cacheDirectory.path,
             "--disable-audio-cache",
             "--disable-discovery",

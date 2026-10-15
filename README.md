@@ -23,7 +23,7 @@ Browse your likes and playlists, search for new music and play it, without the S
 - **Cover in focus.** The artwork fills the player, and the whole interface takes on its colors like ambient light.
 - **Sing along.** Time-synced lyrics that scroll with the music; tap a line to jump there.
 - **Pop it out.** Detach the player into a floating, resizable window, or hide the library for a clean, cover-only view.
-- **Settings.** Language (German or English), start with your Mac, menu bar visualizer and keeping the window on top.
+- **Settings.** Language (German or English), audio quality (96, 160 or 320 kbit/s), start with your Mac, menu bar visualizer and keeping the window on top.
 - **Your library.** Liked songs, playlists and search, with infinite scrolling.
 - **Plays by itself.** A bundled [librespot](https://github.com/librespot-org/librespot) engine runs invisibly as the Spotify Connect device "MiniPlayer". No Spotify app needed.
 - **Live visualizer in the icon.** Four bars (bass → treble) dance to whatever is playing.
@@ -101,7 +101,7 @@ That's it. Pick a song and it plays right from MiniPlayer.
 | <kbd>⧉</kbd> button next to the volume | Pop the player out into a floating window, or put it back into the menu bar |
 | Drag the cover | Move the detached window |
 | Drag the window edges | Resize the detached window (in cover-only mode the cover grows with the width) |
-| <kbd>⚙</kbd> button next to the tabs | Settings: language, start with your Mac, visualizer, window on top, account |
+| <kbd>⚙</kbd> button next to the tabs | Settings: language, audio quality, start with your Mac, visualizer, window on top, account |
 | <kbd>⌘W</kbd> | Close the popover or hide the detached window (click the menu bar icon to bring it back) |
 | Device button (bottom left of the player) | Switch playback to your phone, speakers and other devices |
 | <kbd>↑</kbd> button on the cover | Share the current song (Spotify link with cover preview) |
